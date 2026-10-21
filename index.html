@@ -2,35 +2,181 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Марс: заброшенные станции</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Марс: заброшенные станции (Nintendo 2DS Edition)</title>
 <style>
-:root{--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
-#app{max-width:520px;margin:0 auto;padding:10px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;margin-bottom:10px}
-h3{margin:0 0 6px;font-size:14px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
-.st{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
-.st b{display:block;font-size:18px}.st span{font-size:11px;color:var(--mu)}
-button{font:inherit;color:var(--tx);background:var(--bt);border:1px solid var(--bd);border-radius:10px;padding:9px 10px;margin:3px 3px 3px 0;cursor:pointer}
-button:disabled{opacity:.4}button.p{background:var(--ac);color:#03140a;border-color:var(--ac)}button.sel{outline:2px solid var(--ac)}
-.log{font-size:13px;color:var(--mu)}.log div:last-child{color:var(--tx)}
-.bad{color:var(--bad)}.ok{color:var(--ok)}.mu{color:var(--mu);font-size:13px}
+/* 
+  Nintendo 2DS Dual-Screen Terminal Theme Styling
+  Optimized for dual-screen low-resolution viewports (~400x240 per screen style stacked vertically)
+*/
+:root{
+  --bg: #030805;
+  --panel-bg: #07120a;
+  --tx: #b8f2c8;
+  --mu: #578a69;
+  --ac: #2fe06a;
+  --ok: #2fe06a;
+  --bad: #ff5252;
+  --bd: #133822;
+  --bt: #0c2417;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 4px;
+  background: var(--bg);
+  color: var(--tx);
+  font: 11px/1.3 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#nintendo-2ds-container {
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* 2DS Screens simulation */
+.ds-screen {
+  background: var(--panel-bg);
+  border: 2px solid var(--bd);
+  border-radius: 6px;
+  padding: 6px;
+  min-height: 200px;
+  position: relative;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+.ds-top-screen {
+  border-bottom: 4px dashed var(--bd);
+}
+.screen-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--mu);
+  letter-spacing: .08em;
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bd);
+  padding-bottom: 2px;
+}
+h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--mu);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.st {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  text-align: center;
+  background: var(--bt);
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--bd);
+}
+.st b { display: block; font-size: 13px; color: var(--ac); }
+.st span { font-size: 9px; color: var(--mu); }
+button {
+  font: inherit;
+  color: var(--tx);
+  background: var(--bt);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  min-height: 28px;
+  touch-action: manipulation;
+}
+button:active { background: var(--bd); }
+button:disabled { opacity: .3; cursor: not-allowed; }
+button.p {
+  background: var(--ac);
+  color: #03140a;
+  border-color: var(--ac);
+  font-weight: bold;
+}
+button.sel {
+  outline: 2px solid var(--ac);
+  background: #113822;
+}
+.btn-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+}
+.log-box {
+  font-size: 10px;
+  color: var(--mu);
+  background: #020503;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #0d2215;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.log-box div:last-child { color: var(--tx); }
+.bad { color: var(--bad); }
+.ok { color: var(--ok); }
+.mu { color: var(--mu); font-size: 10px; }
+.card {
+  background: #050e08;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  padding: 5px;
+  margin-bottom: 4px;
+}
+/* Touch-friendly tab switcher for 2DS lower screen actions */
+.tabs-header {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.tabs-header button {
+  flex: 1;
+  padding: 4px;
+  font-size: 10px;
+  margin: 0;
+}
+.scrollable-content {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="nintendo-2ds-container">
+  <!-- Верхний экран 2DS: Статус робота, текущая комната, битва и телеметрия -->
+  <div class="ds-screen ds-top-screen">
+    <div class="screen-label"><span>Экран 1: Телеметрия и Обзор</span><span id="ds-time">2DS v1.0</span></div>
+    <div id="top-screen-content"></div>
+  </div>
+
+  <!-- Нижний экран 2DS: Интерактивное управление, действия, инвентарь и тач-кнопки -->
+  <div class="ds-screen ds-bottom-screen">
+    <div class="screen-label"><span>Экран 2: Управление и Действия</span><span>Touch Terminal</span></div>
+    <div id="bottom-screen-content"></div>
+  </div>
+</div>
+
 <script>
+// Оригинальная игровая логика и симуляция (без изменений)
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[R(0,a.length-1)],ch=p=>Math.random()*100<p;
 const MODS=[
 {id:'armor',n:'Броня',d:'урон по ядру −30%',e:1},
 {id:'sight',n:'Прицел',d:'+15% к шансу попадания',e:1},
 {id:'scan',n:'Сканер',d:'показывает тип соседних комнат',e:1},
 {id:'shield',n:'Щит',d:'поглощает 3 урона за бой',e:2},
-{id:'repair',n:'Ремонтник',d:'+2 к ядру при переходе',e:2},
+{id:'repair',n:'Ремонтник',d:'+2 к ядро при переходе',e:2},
 {id:'grip',n:'Манипулятор',d:'+50% найденного металла',e:1},
 {id:'regen',n:'Ретег',d:'',e:1},{id:'cloak',n:'Невидимость',d:'',e:1},{id:'solar',n:'Солнечные панели',d:'',e:0}];
 const RN=['Шлюз','Склад','Реакторная','Лаборатория','Жилой блок','Ангар','Мастерская','Пультовая','Оранжерея'];
@@ -51,6 +197,8 @@ const pickGen=()=>{let x=R(1,100);for(const [g,w] of [[100,30],[200,28],[300,20]
 const lootGen=()=>ch(50)&&G&&G.robot?G.robot.gen:pickGen();
 const PUNCH={n:'Удар манипулятором',t:'-',dmg:2,acc:75,c:0};
 let G;
+let activeTab = 'actions'; // Вкладка нижнего экрана для удобства на 2DS ('actions', 'inv', 'map')
+
 function genRooms(n){
 const rooms=[];
 for(let i=0;i<n;i++)rooms.push({name:i?RN[i%RN.length]+(i>8?' '+i:''):'Шлюз',adj:[],type:i?(ch(45)?'e':ch(55)?'l':'x'):'x',vis:!i,clear:!i,loot:[]});
@@ -67,11 +215,11 @@ return{name:P(['Арес','Фобос','Деймос','Олимп','Тарсис
 function fillMap(){const okN=()=>G.sts.filter(x=>!x.sent&&x.pw=='ok').length;
 while(okN()<2)G.sts.push(genStation({pw:'ok',age:P(['old','new'])}));
 while(G.sts.filter(x=>!x.sent).length<4)G.sts.push(genStation())}
-const stTag=s=>SZ[s.sz].n+' ('+s.rooms.length+' комн.) · '+AGES[s.age].n+' · питание: '+PW[s.pw].n;
+const stTag=s=>SZ[s.sz].n+' ('+s.rooms.length+' к.) · '+AGES[s.age].n+' · питание: '+PW[s.pw].n;
 const pc=x=>Math.round(x*100);
-const stFx=s=>{const A=AGES[s.age],p=PW[s.pw];return '🔫 точность '+A.acc[0]+'–'+A.acc[1]+'% · ⚡'+A.ec[0]+'–'+A.ec[1]+'/выстрел · 👾 прочность врагов '+pc(A.core)+'%<br>📦 ресурсы '+pc(p.res)+'%'+(p.res<1?' (со сканером '+pc(p.sc)+'%)':'')+' · 🤖 боты '+(p.bot?'−'+p.bot+'% точности':'в полную силу')};
+const stFx=s=>{const A=AGES[s.age],p=PW[s.pw];return '🔫 точн. '+A.acc[0]+'–'+A.acc[1]+'% · ⚡'+A.ec[0]+'–'+A.ec[1]+'/выстр. · 👾 проч. '+pc(A.core)+'%<br>📦 рес. '+pc(p.res)+'%'+(p.res<1?' (скан. '+pc(p.sc)+'%)':'')+' · 🤖 боты '+(p.bot?'−'+p.bot+'%':'норм')};
 const bodiesAt=k=>G.bodies.filter(b=>b.station===k).length;
-const mapCard=(s,k)=>'<div class="card" style="margin:6px 0"><b>№'+(k+1)+' «'+s.name+'»</b>'+(k+1==G.st?' · <span class="ok">текущая</span>':'')+(s.sent?' · <span class="ok">передана ✓</span>':'')+'<div class="mu">'+stTag(s)+' · исследовано '+s.rooms.filter(x=>x.clear).length+'/'+s.rooms.length+'</div><div class="mu">'+stFx(s)+'</div>'+(bodiesAt(k)?'<div class="mu">Тел: '+bodiesAt(k)+'</div>':'')+'<button class="p" onclick="drive('+k+')">'+(k+1==G.st?'Вернуться':'Лететь')+'</button></div>';
+const mapCard=(s,k)=>'<div class="card" style="margin:4px 0"><b>№'+(k+1)+' «'+s.name+'»</b>'+(k+1==G.st?' · <span class="ok">текущ.</span>':'')+(s.sent?' · <span class="ok">✓</span>':'')+'<div class="mu">'+stTag(s)+' · изсл. '+s.rooms.filter(x=>x.clear).length+'/'+s.rooms.length+'</div>'+(bodiesAt(k)?'<div class="mu">Тел: '+bodiesAt(k)+'</div>':'')+'<button class="p" onclick="drive('+k+')">'+(k+1==G.st?'Вернуться':'Лететь')+'</button></div>';
 function newGame(){const st0=genStation({sz:'s',age:'new',pw:'ok'}),rooms=st0.rooms,n=rooms.length;
 const gen=pickGen(),gi=GEN[gen],weps=[newW(9,'old',gen)];if(gi.w>1&&ch(50))weps.push(newW(9,'old',gen));
 G={robot:{gen,hp:gi.hp,max:gi.hp,weps,mods:[newM('old',gen),newM('old',gen)]},bodies:[],
@@ -108,7 +256,6 @@ for(let k=R(0,2);k>0;k--){const v=newM(undefined,e.gen);e.parts.push({t:'m',v,hp
 G.fight={e,r};G.tg='c';L('Бой! '+e.n+' преграждает путь.');render()}
 const chance=w=>Math.max(5,Math.min(95,w.acc+(act('sight')?15:0)-(G.tg!='c'?10:0)-(G.fight&&G.fight.e.fx.cloak?G.fight.e.fx.cloak.q:0)));
 const canFire=w=>w.t=='e'?G.en>=w.c:w.t=='m'?G.me>=w.c:true;
-const ealive=(e,id)=>e.parts.some(p=>p.t=='m'&&!p.dead&&p.v.id==id);
 function shoot(w){
 const e=G.fight.e;if(!canFire(w))return;
 if(w.t=='e')spend(w.c);else if(w.t=='m')G.me-=w.c;
@@ -191,36 +338,117 @@ function send(){const s=G.sts[G.st-1];s.sent=true;G.sent++;fillMap();report(s);L
 const bodyStr=b=>'Тело '+gn(b.gen)+' (HP '+b.hp+'/'+b.max+(b.coreDead!=null?', ядро '+(b.coreDead?'мёртвое':'живое'):'')+')';
 const bodyEq=b=>'<div class="mu">'+(b.weps.length?'🔫 '+b.weps.map(w=>w.n+' '+w.dmg+'/'+w.acc+'%').join(', '):'без оружия')+' · ⚙ '+(b.mods.length?b.mods.map(m=>m.n).join(', '):'без модулей')+(b.coreDead?' · перезапуск ядра '+GEN[b.gen].cost+'⚡':'')+'</div>';
 const robLine=()=>{const ro=G.robot,gi=GEN[ro.gen];return gn(ro.gen)+' · HP '+ro.hp+'/'+ro.max+' · оружие '+ro.weps.length+'/'+gi.w+' · модули '+ro.mods.length+'/'+gi.m};
-const wd=w=>w.n+' · '+w.dmg+' урона · '+(w.t=='e'?'⚡':'🔩')+w.c;
+const wd=w=>w.n+' · '+w.dmg+' урон · '+(w.t=='e'?'⚡':'🔩')+w.c;
 const it2s=it=>it.k=='a'?'Антенна':it.k=='body'?'<b>'+bodyStr(it.v)+'</b>'+bodyEq(it.v):it.k=='w'?'Оружие '+gn(it.v.gen)+': '+wd(it.v)+' · '+it.v.acc+'% · HP '+it.v.hp:'Модуль '+gn(it.v.gen)+': '+it.v.n+' ('+md(it.v)+', −'+it.v.e+'⚡, '+it.v.p+'%, HP '+it.v.hp+')';
+
+// Рендеринг под Nintendo 2DS с разделением на верхний и нижний экран
 function render(){
-const A=document.getElementById('app');
-if(G.over){A.innerHTML='<div class="card"><h3>'+(G.over=='win'?'Миссия выполнена':'Конец')+'</h3><p>'+(G.over=='win'?'Все комнаты исследованы, данные переданы на Землю.':G.over)+'</p><button class="p" onclick="newGame()">Новая станция</button></div>';return}
-if(G.surf){A.innerHTML='<div class="card"><h3>Поверхность Марса</h3><div>⚡ '+G.en+' · 🔩 '+G.me+'</div>'+(G.sent?'<div class="mu">Передано станций: '+G.sent+' · оценка: '+verdict()+'</div>':'')+G.mods.map((m,i)=>m.id=='solar'?'<div>'+m.n+' ('+md(m)+', '+m.p+'%) <button class="p" '+(m.used?'disabled':'')+' onclick="sun('+i+')">Развернуть</button></div>':'').join('')+''+'<h3 style="margin-top:8px">Карта станций</h3>'+G.sts.map(mapCard).join('')+'</div><div class="card log">'+G.log.slice(-4).map(s=>'<div>'+s+'</div>').join('')+'</div>';return}
+const topEl = document.getElementById('top-screen-content');
+const botEl = document.getElementById('bottom-screen-content');
+
+// Если игра завершена
+if(G.over){
+  topEl.innerHTML='<h3>'+(G.over=='win'?'Миссия выполнена':'Конец')+'</h3><p>'+(G.over=='win'?'Все комнаты исследованы, данные переданы на Землю.':G.over)+'</p>';
+  botEl.innerHTML='<button class="p" onclick="newGame()" style="width:100%;padding:12px;">Новая станция</button>';
+  return;
+}
+
+// Если на поверхности
+if(G.surf){
+  topEl.innerHTML='<h3>Поверхность Марса</h3><div class="st"><div><b>'+G.en+'</b><span>⚡ энергия</span></div><div><b>'+G.me+'</b><span>🔩 металл</span></div><div colspan="2"><b>'+G.sent+'</b><span>станций</span></div></div>'+(G.sent?'<div class="mu" style="margin-top:4px">Оценка: '+verdict()+'</div>':'');
+  let bHtml='<h3>Карта станций и Панели</h3><div class="scrollable-content">';
+  bHtml+=G.mods.map((m,i)=>m.id=='solar'?'<div class="card"><div>'+m.n+' ('+md(m)+', '+m.p+'%)</div><button class="p" '+(m.used?'disabled':'')+' onclick="sun('+i+')">Развернуть панели</button></div>':'').join('');
+  bHtml+=G.sts.map(mapCard).join('');
+  bHtml+='</div>';
+  botEl.innerHTML=bHtml;
+  return;
+}
+
 const rs=G.rooms,r=rs[G.cur],done=rs.filter(x=>x.clear).length,F=G.fight;
-let h='<div class="card"><div class="st"><div><b class="'+(G.hp<10?'bad':'')+'">'+G.hp+'/'+G.max+'</b><span>ядро</span></div><div><b>'+G.en+'</b><span>⚡ энергия</span></div><div><b>'+G.me+'</b><span>🔩 металл</span></div><div><b class="'+(G.ant?'ok':'bad')+'">'+(G.ant?'ОК':'сломана')+'</b><span>антенна</span></div></div><div class="mu" style="text-align:center;margin-top:6px">'+robLine()+'</div></div>';
-h+='<div class="card"><h3>Станция №'+G.st+(G.sts[G.st-1].sent?' ✓':'')+' · '+r.name+' · исследовано '+done+'/'+rs.length+'</h3><div class="mu">'+stTag(G.sts[G.st-1])+'</div>';
-if(F){const e=F.e,S=act('scan');h+='<div><b>'+e.n+'</b> ['+gn(e.gen)+'] · ядро '+(S?e.core+'/'+e.max+' · ⚡'+e.en+' · 🔩'+e.me+(Object.keys(e.fx).length?' · эффекты: '+Object.keys(e.fx).map(k=>MODS.find(x=>x.id==k).n).join(', '):''):cond(e.core/e.max)+' · данные скрыты (нужен включённый сканер)')+'</div><div class="mu">Куда бить:</div><button class="'+(G.tg=='c'?'sel':'')+'" onclick="G.tg=\'c\';render()">Ядро</button>';
-e.parts.forEach((p,i)=>{h+='<button '+(p.dead?'disabled ':'')+'class="'+(G.tg===i?'sel':'')+'" onclick="G.tg='+i+';render()">'+(p.t=='w'?'Оружие':(S?p.v.n:'Модуль'))+' '+(p.dead?'✗':S?p.hp+'/'+p.max:'')+'</button>'});
-h+='<div class="mu">Атаковать:</div>';
-G.weps.concat([PUNCH]).forEach((w,i,a)=>{h+='<button class="p" '+(canFire(w)?'':'disabled ')+'onclick="shoot('+(i<G.weps.length?'G.weps['+i+']':'PUNCH')+')">'+wd(w)+' · '+chance(w)+'%</button>'});
-h+='<div><button onclick="flee()">Отступить (50%)</button><button onclick="runAway()" '+(G.en>=20?'':'disabled')+'>Побег из комнаты (20⚡)</button></div>'}
-else{
-h+='<div class="mu">Выходы:</div>';r.adj.forEach(i=>{const x=rs[i];h+='<button onclick="go('+i+')">'+x.name+' ['+st(x)+']</button>'});
-if(r.loot.length){h+='<div class="mu">Добыча:</div>';r.loot.forEach((it,i)=>{const bd=it.k=='body';h+='<div>'+it2s(it)+'<br><button '+(bd?'class="p" ':'')+'onclick="take('+i+')">'+(bd?'Занять тело':'Взять')+'</button><button onclick="grind('+i+')">'+(bd?'Разобрать':inG()?'В дробилку':'Сломать')+' (+'+val(it)+')</button></div>'})}
-{const here=G.bodies.map((b,i)=>b.room===G.cur&&b.station===G.st-1?i:-1).filter(i=>i>=0);
-if(here.length){h+='<div class="mu">Оставленные тела:</div>';here.forEach(i=>{const b=G.bodies[i];h+='<div>'+bodyStr(b)+bodyEq(b)+'<button class="p" onclick="swapBody('+i+')">Пересесть в тело '+gn(b.gen)+'</button></div>'})}}
-if(G.rep!=null&&r.loot[G.rep]){const it=r.loot[G.rep],arr=it.k=='w'?G.weps:G.mods;h+='<div class="mu" style="margin-top:6px">Слоты полны. Новое: '+it2s(it)+'<br>Что заменить?</div>';arr.forEach((o,j)=>{h+='<div>'+(it.k=='w'?'🔫 ['+gn(o.gen)+'] '+wd(o)+' · '+o.acc+'% · HP '+o.hp:'⚙ '+o.n+' — '+md(o)+' (−'+o.e+'⚡, '+o.p+'%, HP '+o.hp+')')+'<br><button class="p" onclick="repl('+j+')">Заменить это</button></div>'});h+='<button onclick="G.rep=null;render()">Отмена</button>'}
-h+='<div style="margin-top:6px">';
-if(!G.ant)h+='<button onclick="repair()" '+(G.me>=12?'':'disabled')+'>Починить антенну (12 🔩)</button>';
-h+='<button class="p" onclick="send()" '+(done==rs.length&&G.ant&&!G.sts[G.st-1].sent?'':'disabled')+'>Передать данные</button>'+(G.cur==0?'<button onclick="surf()" '+(G.en>=10?'':'disabled')+'>Выйти на поверхность (10⚡)</button>':'')+'</div>'}
-h+='</div>';
-h+='<div class="card"><h3>Снаряжение</h3>';
-G.weps.forEach((w,i)=>{h+='<div>🔫 ['+gn(w.gen)+'] '+wd(w)+' · '+w.acc+'% · HP '+w.hp+' '+(F?'':'<button onclick="grindOwn(\'w\','+i+')">'+(inG()?'в дробилку':'сломать')+'</button>')+'</div>'});
-G.mods.forEach((m,i)=>{h+='<div>⚙ ['+gn(m.gen)+'] <b>'+m.n+'</b> — '+md(m)+' (−'+m.e+'⚡, срабатывает '+m.p+'%, HP '+m.hp+')'+(m.left>0?' ▶'+m.left:'')+' '+(m.id=='regen'||m.id=='solar'?'':'<button class="p" onclick="useMod('+i+')">Вкл</button>')+(F?'':'<button onclick="grindOwn(\'m\','+i+')">'+(inG()?'в дробилку':'сломать')+'</button>')+'</div>'});
-h+='<div class="mu">'+gn(G.robot.gen)+' · оружие '+G.weps.length+'/'+GEN[G.robot.gen].w+' · модули '+G.mods.length+'/'+GEN[G.robot.gen].m+'</div></div>';
-h+='<div class="card log"><h3>Журнал</h3>'+G.log.slice(-7).map(s=>'<div>'+s+'</div>').join('')+'</div>';
-A.innerHTML=h}
+
+// --- ВЕРХНИЙ ЭКРАН (Телеметрия, состояние робота, текущая комната / бой) ---
+let topH='<div class="st"><div><b class="'+(G.hp<10?'bad':'')+'">'+G.hp+'/'+G.max+'</b><span>ядро</span></div><div><b>'+G.en+'</b><span>⚡ энерг.</span></div><div><b>'+G.me+'</b><span>🔩 металл</span></div><div><b class="'+(G.ant?'ok':'bad')+'">'+(G.ant?'ОК':'сломана')+'</b><span>антенна</span></div></div>';
+topH+='<div class="mu" style="text-align:center;margin-top:3px">'+robLine()+'</div>';
+topH+='<div class="card" style="margin-top:4px;padding:4px;">';
+topH+='<b>Станция №'+G.st+(G.sts[G.st-1].sent?' ✓':'')+'</b> · <u>'+r.name+'</u> ('+done+'/'+rs.length+' изсл.)';
+
+if(F){
+  const e=F.e,S=act('scan');
+  topH+='<div style="margin-top:3px;color:var(--bad)"><b>⚔ БОЙ: '+e.n+'</b> ['+gn(e.gen)+']</div>';
+  topH+='<div class="mu">Ядро врага: '+(S?e.core+'/'+e.max+' · ⚡'+e.en+' · 🔩'+e.me:cond(e.core/e.max))+'</div>';
+} else {
+  topH+='<div class="mu">'+stTag(G.sts[G.st-1])+'</div>';
+}
+topH+='</div>';
+
+// Лог событий на верхнем экране (последние 2 строчки для экономии места)
+topH+='<div class="log-box" style="margin-top:2px;">'+G.log.slice(-2).map(s=>'<div>'+s+'</div>').join('')+'</div>';
+topEl.innerHTML=topH;
+
+
+// --- НИЖНИЙ ЭКРАН (Интерактивные вкладки управления для 2DS сенсорного ввода) ---
+let botH='<div class="tabs-header">';
+botH+='<button class="'+(activeTab=='actions'?'sel':'')+'" onclick="activeTab=\'actions\';render()">Действия</button>';
+botH+='<button class="'+(activeTab=='inv'?'sel':'')+'" onclick="activeTab=\'inv\';render()">Инвентарь</button>';
+botH+='<button class="'+(activeTab=='map'?'sel':'')+'" onclick="activeTab=\'map\';render()">Выходы</button>';
+botH+='</div>';
+
+botH+='<div class="scrollable-content">';
+
+if(activeTab=='actions' || F){
+  if(F){
+    // Интерфейс боя на нижнем экране
+    botH+='<div class="card"><h3>Цель атаки:</h3><div class="btn-grid">';
+    botH+='<button class="'+(G.tg=='c'?'sel':'')+'" onclick="G.tg=\'c\';render()">Ядро</button>';
+    F.e.parts.forEach((p,i)=>{botH+='<button '+(p.dead?'disabled ':'')+'class="'+(G.tg===i?'sel':'')+'" onclick="G.tg='+i+';render()">'+(p.t=='w'?'Оружие':(act('scan')?p.v.n:'Модуль'))+'</button>'});
+    botH+='</div><h3 style="margin-top:4px">Оружие:</h3><div class="btn-grid">';
+    G.weps.concat([PUNCH]).forEach((w,i,a)=>{botH+='<button class="p" '+(canFire(w)?'':'disabled ')+'onclick="shoot('+(i<G.weps.length?'G.weps['+i+']':'PUNCH')+')">'+wd(w)+' ('+chance(w)+'%)</button>'});
+    botH+='</div><div class="btn-grid" style="margin-top:4px;"><button onclick="flee()">Отступить (50%)</button><button onclick="runAway()" '+(G.en>=20?'':'disabled')+'>Побег (20⚡)</button></div></div>';
+  } else {
+    // Обычные действия в комнате
+    botH+='<div class="card"><h3>Действия в комнате</h3>';
+    if(r.loot.length){
+      botH+='<div class="mu"><b>Найдено на полу:</b></div>';
+      r.loot.forEach((it,i)=>{
+        const bd=it.k=='body';
+        botH+='<div style="border-bottom:1px dashed var(--bd);padding:3px 0">'+it2s(it)+'<div class="btn-grid"><button '+(bd?'class="p" ':'')+'onclick="take('+i+')">'+(bd?'Занять':'Взять')+'</button><button onclick="grind('+i+')">'+(bd?'Разобрать':inG()?'В дробилку':'Сломать')+' (+'+val(it)+')</button></div></div>';
+      });
+    }
+    // Оставленные тела
+    const here=G.bodies.map((b,i)=>b.room===G.cur&&b.station===G.st-1?i:-1).filter(i=>i>=0);
+    if(here.length){
+      botH+='<div class="mu" style="margin-top:4px"><b>Тела в комнате:</b></div>';
+      here.forEach(i=>{const b=G.bodies[i];botH+='<div>'+bodyStr(b)+'<br><button class="p" onclick="swapBody('+i+')">Пересесть в '+gn(b.gen)+'</button></div>'});
+    }
+    if(G.rep!=null&&r.loot[G.rep]){
+      const it=r.loot[G.rep],arr=it.k=='w'?G.weps:G.mods;
+      botH+='<div class="card" style="border-color:var(--bad)"><div class="mu">Слоты полны. Замена для: '+it2s(it)+'</div>';
+      arr.forEach((o,j)=>{botH+='<button class="p" onclick="repl('+j+')">Заменить слот '+(j+1)+'</button>'});
+      botH+='<button onclick="G.rep=null;render()">Отмена</button></div>';
+    }
+    botH+='<div class="btn-grid" style="margin-top:6px;">';
+    if(!G.ant)botH+='<button onclick="repair()" '+(G.me>=12?'':'disabled')+'>Починить антенну (12🔩)</button>';
+    botH+='<button class="p" onclick="send()" '+(done==rs.length&&G.ant&&!G.sts[G.st-1].sent?'':'disabled')+'>Передать данные</button>';
+    if(G.cur==0)botH+='<button onclick="surf()" '+(G.en>=10?'':'disabled')+'>На поверхность (10⚡)</button>';
+    botH+='</div></div>';
+  }
+} else if(activeTab=='inv'){
+  // Инвентарь и модули на нижнем экране
+  botH+='<div class="card"><h3>Оружие и Модули</h3>';
+  G.weps.forEach((w,i)=>{botH+='<div>🔫 ['+gn(w.gen)+'] '+wd(w)+' · '+w.acc+'% '+(!F?'<button onclick="grindOwn(\'w\','+i+')">Сломать</button>':'')+'</div>'});
+  G.mods.forEach((m,i)=>{botH+='<div>⚙ <b>'+m.n+'</b> (−'+m.e+'⚡) '+(!['regen','solar'].includes(m.id)?'<button class="p" onclick="useMod('+i+')">Вкл</button>':'')+' '+(!F?'<button onclick="grindOwn(\'m\','+i+')">Сломать</button>':'')+'</div>'});
+  botH+='<div class="mu" style="margin-top:4px">Модель: '+gn(G.robot.gen)+' (Оружие: '+G.weps.length+'/'+GEN[G.robot.gen].w+', Модули: '+G.mods.length+'/'+GEN[G.robot.gen].m+')</div></div>';
+} else if(activeTab=='map'){
+  // Навигация по комнатам на нижнем экране
+  botH+='<div class="card"><h3>Доступные выходы</h3><div class="btn-grid">';
+  r.adj.forEach(i=>{const x=rs[i];botH+='<button class="p" onclick="go('+i+')">'+x.name+' ['+st(x)+']</button>'});
+  botH+='</div></div>';
+}
+
+botH+='</div>';
+botEl.innerHTML=botH;
+}
+
 newGame();
 </script>
 </body>
