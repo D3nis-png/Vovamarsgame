@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Марс: заброшенные станции</title>
+<style>
+:root{--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#050b07;--card:#0b1710;--tx:#c9f5d6;--mu:#6fa381;--ac:#2fe06a;--ok:#2fe06a;--bad:#ff5a5a;--bd:#17402a;--bt:#10241a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+#app{max-width:520px;margin:0 auto;padding:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;margin-bottom:10px}
+h3{margin:0 0 6px;font-size:14px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.st{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.st b{display:block;font-size:18px}.st span{font-size:11px;color:var(--mu)}
+button{font:inherit;color:var(--tx);background:var(--bt);border:1px solid var(--bd);border-radius:10px;padding:9px 10px;margin:3px 3px 3px 0;cursor:pointer}
+button:disabled{opacity:.4}button.p{background:var(--ac);color:#03140a;border-color:var(--ac)}button.sel{outline:2px solid var(--ac)}
+.log{font-size:13px;color:var(--mu)}.log div:last-child{color:var(--tx)}
+.bad{color:var(--bad)}.ok{color:var(--ok)}.mu{color:var(--mu);font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[R(0,a.length-1)],ch=p=>Math.random()*100<p;
+const MODS=[
+{id:'armor',n:'Броня',d:'урон по ядру −30%',e:1},
+{id:'sight',n:'Прицел',d:'+15% к шансу попадания',e:1},
+{id:'scan',n:'Сканер',d:'показывает тип соседних комнат',e:1},
+{id:'shield',n:'Щит',d:'поглощает 3 урона за бой',e:2},
+{id:'repair',n:'Ремонтник',d:'+2 к ядру при переходе',e:2},
+{id:'grip',n:'Манипулятор',d:'+50% найденного металла',e:1},
+{id:'regen',n:'Ретег',d:'',e:1},{id:'cloak',n:'Невидимость',d:'',e:1},{id:'solar',n:'Солнечные панели',d:'',e:0}];
+const RN=['Шлюз','Склад','Реакторная','Лаборатория','Жилой блок','Ангар','Мастерская','Пультовая','Оранжерея'];
+const AGES={anc:{n:'Древняя',acc:[40,60],ec:[4,5],mc:[2,3],core:.8},old:{n:'Старая',acc:[60,75],ec:[3,4],mc:[1,2],core:.9},new:{n:'Новая',acc:[75,90],ec:[1,3],mc:[1,1],core:1}};
+const PW={ok:{n:'нормальное',res:1,sc:1,bot:0},em:{n:'аварийное',res:.8,sc:1,bot:7},off:{n:'нет электричества',res:.2,sc:.75,bot:15}};
+const SZ={s:{n:'Малая',r:[4,5]},m:{n:'Средняя',r:[6,7]},l:{n:'Большая',r:[8,9]}};
+const curAge=()=>G&&G.sts&&G.sts[G.st-1]?G.sts[G.st-1].age:'old';
+const cs=()=>G.sts[G.st-1];
+const gain=n=>{const p=PW[cs().pw];return Math.max(1,Math.round(n*(act('scan')?p.sc:p.res)))};
+const newW=(mx=9,ag,gen)=>{const A=AGES[ag||curAge()],t=P(['e','m']),dmg=R(3,mx);
+return{n:P(['Лазер','Рельса','Плазмоган','Дробовик','Пулемёт','Шокер','Игломёт'])+'-'+R(1,9),t,dmg,acc:R(A.acc[0],A.acc[1]),c:t=='e'?R(A.ec[0],A.ec[1]):R(A.mc[0],A.mc[1]),hp:R(5,12),gen:gen||lootGen()}};
+const newM=(ag,gen)=>{const m={...P(MODS)};m.e=m.id=='solar'?0:Math.max(1,m.e+R(-1,1));m.p=R(AGES[ag||curAge()].acc[0],AGES[ag||curAge()].acc[1]);m.hp=R(4,10);m.on=true;m.left=0;m.t=R(2,5);m.cd=0;m.gen=gen||lootGen();
+if(m.id=='regen'){m.a=R(2,6);m.e=0}if(m.id=='cloak'){m.e=R(3,8);m.q=R(15,40);m.b=R(10,35)}if(m.id=='armor')m.q=R(15,45);if(m.id=='shield')m.q=R(2,6);if(m.id=='repair')m.m=R(2,5);if(m.id=='solar')m.s=R(8,20);return m};
+const md=m=>({armor:'урон −'+m.q+'% на '+m.t+' ход.',sight:'+15% точность на '+m.t+' ход.',scan:'видно комнаты '+m.t+' ход.',shield:'поглощает '+m.q+' урона',repair:'чинит ядро на 4–8 за '+m.m+'🔩',grip:'+50% металла на '+m.t+' ход.',regen:'АВТО: +'+m.a+'⚡/ход на '+m.t+' ход.',cloak:'враг мажет чаще (−'+m.q+'%, пропуск хода врага '+m.b+'%) на '+m.t+' ход.',solar:'+'+m.s+'⚡ на поверхности'}[m.id]);
+const GEN={100:{w:1,m:2,hp:20,cost:10},200:{w:1,m:2,hp:25,cost:20},300:{w:2,m:3,hp:30,cost:30},400:{w:2,m:3,hp:35,cost:40},500:{w:2,m:4,hp:40,cost:50}};
+const gn=g=>'X-'+g;
+const pickGen=()=>{let x=R(1,100);for(const [g,w] of [[100,30],[200,28],[300,20],[400,14],[500,8]]){if(x<=w)return g;x-=w}return 100};
+const lootGen=()=>ch(50)&&G&&G.robot?G.robot.gen:pickGen();
+const PUNCH={n:'Удар манипулятором',t:'-',dmg:2,acc:75,c:0};
+let G;
+function genRooms(n){
+const rooms=[];
+for(let i=0;i<n;i++)rooms.push({name:i?RN[i%RN.length]+(i>8?' '+i:''):'Шлюз',adj:[],type:i?(ch(45)?'e':ch(55)?'l':'x'):'x',vis:!i,clear:!i,loot:[]});
+const link=(a,b)=>{if(a!=b&&!rooms[a].adj.includes(b)){rooms[a].adj.push(b);rooms[b].adj.push(a)}};
+for(let i=1;i<n;i++)link(i,R(0,i-1));
+for(let k=0;k<n/3;k++)link(R(0,n-1),R(0,n-1));
+const g=R(1,n-1);rooms[g].type='g';rooms[g].name='Дробилка';
+if(!rooms.some(x=>x.type=='l')){const c=[];rooms.forEach((x,i)=>{if(i&&x.type!='g')c.push(i)});rooms[P(c)].type='l'}
+P(rooms.filter(x=>x.type=='l')).gE=true;
+return rooms}
+const pickPw=a=>{const w={anc:[15,40],old:[40,40],new:[75,22]}[a],x=R(1,100);return x<=w[0]?'ok':x<=w[0]+w[1]?'em':'off'};
+function genStation(o={}){const sz=o.sz||P(['s','m','l']),age=o.age||P(['anc','old','new']),pw=o.pw||pickPw(age);
+return{name:P(['Арес','Фобос','Деймос','Олимп','Тарсис','Меридиан','Кратер','Гелиос','Утопия','Эллада'])+'-'+R(1,99),sz,age,pw,rooms:genRooms(R(SZ[sz].r[0],SZ[sz].r[1])),sent:false}}
+function fillMap(){const okN=()=>G.sts.filter(x=>!x.sent&&x.pw=='ok').length;
+while(okN()<2)G.sts.push(genStation({pw:'ok',age:P(['old','new'])}));
+while(G.sts.filter(x=>!x.sent).length<4)G.sts.push(genStation())}
+const stTag=s=>SZ[s.sz].n+' ('+s.rooms.length+' комн.) · '+AGES[s.age].n+' · питание: '+PW[s.pw].n;
+const pc=x=>Math.round(x*100);
+const stFx=s=>{const A=AGES[s.age],p=PW[s.pw];return '🔫 точность '+A.acc[0]+'–'+A.acc[1]+'% · ⚡'+A.ec[0]+'–'+A.ec[1]+'/выстрел · 👾 прочность врагов '+pc(A.core)+'%<br>📦 ресурсы '+pc(p.res)+'%'+(p.res<1?' (со сканером '+pc(p.sc)+'%)':'')+' · 🤖 боты '+(p.bot?'−'+p.bot+'% точности':'в полную силу')};
+const bodiesAt=k=>G.bodies.filter(b=>b.station===k).length;
+const mapCard=(s,k)=>'<div class="card" style="margin:6px 0"><b>№'+(k+1)+' «'+s.name+'»</b>'+(k+1==G.st?' · <span class="ok">текущая</span>':'')+(s.sent?' · <span class="ok">передана ✓</span>':'')+'<div class="mu">'+stTag(s)+' · исследовано '+s.rooms.filter(x=>x.clear).length+'/'+s.rooms.length+'</div><div class="mu">'+stFx(s)+'</div>'+(bodiesAt(k)?'<div class="mu">Тел: '+bodiesAt(k)+'</div>':'')+'<button class="p" onclick="drive('+k+')">'+(k+1==G.st?'Вернуться':'Лететь')+'</button></div>';
+function newGame(){const st0=genStation({sz:'s',age:'new',pw:'ok'}),rooms=st0.rooms,n=rooms.length;
+const gen=pickGen(),gi=GEN[gen],weps=[newW(9,'old',gen)];if(gi.w>1&&ch(50))weps.push(newW(9,'old',gen));
+G={robot:{gen,hp:gi.hp,max:gi.hp,weps,mods:[newM('old',gen),newM('old',gen)]},bodies:[],
+get hp(){return this.robot.hp},set hp(v){this.robot.hp=v},get max(){return this.robot.max},set max(v){this.robot.max=v},get weps(){return this.robot.weps},get mods(){return this.robot.mods},
+en:60,me:10,ant:true,st:1,rooms,cur:0,prev:0,fight:null,tg:'c',sh:0,log:['Вы активированы на Марсе в теле '+gn(gen)+'. Станция «'+st0.name+'»: '+n+' комнат. Исследуйте каждую и передайте данные антенной.'],over:null};G.sts=[st0];G.sent=0;fillMap();
+render()}
+const L=s=>{G.log.push(s)};
+const act=id=>G.mods.some(m=>m.id==id&&m.left>0);
+function tick(){G.mods.forEach(m=>{if(m.id=='regen'){if(m.left>0){G.en+=m.a;m.left--;if(!m.left)m.cd=3}else if(m.cd>0)m.cd--;else if(ch(m.p))m.left=m.t}
+else if(m.left>0)m.left--})}
+const cloaked=()=>G.mods.some(m=>m.id=='cloak'&&m.left>0);
+const cloakQ=()=>{const c=G.mods.find(m=>m.id=='cloak'&&m.left>0);return c?c.q:0};
+const cond=f=>f>.66?'цел':f>.33?'повреждён':'критично';
+const drain=()=>0;
+const spend=n=>{G.en=Math.max(0,G.en-n)};
+const st=r=>r.vis?(r.clear?'✓':'⚔'):(act('scan')?{e:'враг',l:'добыча',x:'пусто',g:'дробилка'}[r.type]:'?');
+function go(i){
+if(G.en<=0)return lose('Энергия на нуле. Вы обесточены.');
+spend(1+drain());tick();G.rep=null;G.prev=G.cur;G.cur=i;const r=G.rooms[i];r.vis=true;
+if(act('repair')&&G.hp<G.max){G.hp=Math.min(G.max,G.hp+2)}
+if(!r.clear){
+if(r.type=='e')return startFight(r);
+r.clear=true;
+if(r.type=='l'){let m=R(3,8);if(act('grip'))m=Math.round(m*1.5);m=gain(m);G.me+=m;let s='Вы обыскали «'+r.name+'»: +'+m+' металла';
+const x=r.gE?1:R(1,3);if(x==1){const e=gain(R(10,20));G.en+=e;s+=', +'+e+' энергии'}
+else if(x==2){r.loot.push(ch(50)?{k:'w',v:newW()}:{k:'m',v:newM()});s+=', найдена деталь'}
+L(s+'.')}else L(r.type=='g'?'Вы нашли дробилку: здесь разбор даёт полный металл.':'«'+r.name+'»: пусто.')}
+else L('Вы в комнате «'+r.name+'».');
+if(G.en<=0)L('Энергия на нуле!');render()}
+function startFight(r){
+const e={n:P(['Дрон-охранник','Шагоход','Патрульный','Сборщик','Ржавый страж'])+'-'+R(10,99),core:Math.round(R(16,30)*AGES[curAge()].core),fx:{},sh:0,en:R(6,20),me:R(3,10),parts:[],gen:pickGen()};e.max=e.core;
+const w=newW(7,undefined,e.gen);e.parts.push({t:'w',v:w,hp:w.hp,max:w.hp});
+for(let k=R(0,2);k>0;k--){const v=newM(undefined,e.gen);e.parts.push({t:'m',v,hp:v.hp,max:v.hp})}
+G.fight={e,r};G.tg='c';L('Бой! '+e.n+' преграждает путь.');render()}
+const chance=w=>Math.max(5,Math.min(95,w.acc+(act('sight')?15:0)-(G.tg!='c'?10:0)-(G.fight&&G.fight.e.fx.cloak?G.fight.e.fx.cloak.q:0)));
+const canFire=w=>w.t=='e'?G.en>=w.c:w.t=='m'?G.me>=w.c:true;
+const ealive=(e,id)=>e.parts.some(p=>p.t=='m'&&!p.dead&&p.v.id==id);
+function shoot(w){
+const e=G.fight.e;if(!canFire(w))return;
+if(w.t=='e')spend(w.c);else if(w.t=='m')G.me-=w.c;
+if(ch(chance(w))){
+if(G.tg=='c'){let d=w.dmg;if(e.fx.armor)d=Math.max(1,Math.round(d*(1-e.fx.armor.q/100)));if(e.sh>0){const a=Math.min(e.sh,d);e.sh-=a;d-=a;L('Щит врага поглотил '+a+'.')}e.core-=d;L('Попадание в ядро: −'+d+'.')}
+else{const p=e.parts[G.tg];p.hp-=w.dmg;
+if(p.hp<=0){p.dead=true;p.drop=ch(50);L((p.t=='w'?'Оружие':'Модуль «'+p.v.n+'»')+' врага выбито!');G.tg='c'}
+else L('Попадание: −'+w.dmg+' по детали.')}}
+else L('Промах.');
+if(e.core<=0)return win();
+round()}
+function enemyMods(){const e=G.fight.e;
+const ms=e.parts.filter(p=>p.t=='m'&&!p.dead&&['armor','sight','shield','repair','cloak'].includes(p.v.id)&&!e.fx[p.v.id]&&!(p.v.id=='shield'&&e.sh>0));
+if(!ms.length||!ch(55))return;const m=P(ms).v,id=m.id;
+if(e.en<m.e||(id=='repair'&&(e.me<m.m||e.core>=e.max)))return;e.en-=m.e;
+if(!ch(m.p)){L('Враг пытался включить модуль, но сбой.');return}
+if(id=='repair'){e.me-=m.m;const h=R(3,6);e.core=Math.min(e.max,e.core+h);L('Враг чинит ядро: +'+h+'.')}
+else if(id=='shield'){e.sh=m.q;L('Враг включил щит.')}
+else{e.fx[id]={t:m.t,q:m.q};L('Враг включил модуль: '+(act('scan')?m.n:'что-то неизвестное')+'.')}}
+function eTick(){const e=G.fight&&G.fight.e;if(!e)return;for(const k in e.fx){if(--e.fx[k].t<=0)delete e.fx[k]}
+e.parts.forEach(p=>{if(p.t=='m'&&!p.dead&&p.v.id=='regen'&&ch(p.v.p))e.en+=R(1,p.v.a)})}
+function round(){
+spend(drain());{const c=G.mods.find(x=>x.id=='cloak'&&x.left>0);if(c&&ch(c.b)){L('Невидимость: враг потерял вас и пропустил ход.');tick();eTick();return render()}}enemyMods();
+const e=G.fight.e,wp=e.parts[0];let w=wp.dead?{dmg:1,acc:50}:wp.v;if(w.c){if(w.t=='e'?e.en>=w.c:e.me>=w.c){if(w.t=='e')e.en-=w.c;else e.me-=w.c}else{L('У врага кончилась '+(w.t=='e'?'энергия':'металлолом')+' — бьёт вплотную.');w={dmg:1,acc:50}}}
+if(ch(Math.max(5,w.acc+(e.fx.sight?15:0)-cloakQ()-PW[cs().pw].bot))){
+let d=w.dmg;{const am=G.mods.find(x=>x.id=='armor'&&x.left>0);if(am)d=Math.max(1,Math.round(d*(1-am.q/100)))}
+if(G.sh>0){const a=Math.min(G.sh,d);G.sh-=a;d-=a;L('Щит поглотил '+a+'.')}
+G.hp-=d;L('Враг попал: −'+d+' ядру.');
+if(G.ant&&ch(12)){G.ant=false;L('Антенна повреждена!')}}
+else L('Враг промахнулся.');
+if(G.hp<=0)return lose('Ядро уничтожено.');tick();eTick();
+render()}
+function win(){
+const {e,r}=G.fight;G.fight=null;r.clear=true;
+let m=R(4,10);if(act('grip'))m=Math.round(m*1.5);m=gain(m);G.me+=m;
+e.parts.forEach(p=>{if(p.dead&&p.drop)r.loot.push({k:p.t=='w'?'w':'m',v:p.v})});
+{const mx=GEN[e.gen].hp,live=e.parts.filter(p=>!p.dead);
+r.loot.push({k:'body',v:{gen:e.gen,hp:Math.max(1,Math.round(mx*R(40,90)/100)),max:mx,weps:live.filter(p=>p.t=='w').map(p=>p.v),mods:live.filter(p=>p.t=='m').map(p=>p.v),coreDead:!ch(25)}})}
+if(ch(30))r.loot.push({k:'a'});
+L('Победа! '+e.n+' уничтожен, +'+m+' металла.');render()}
+function flee(){
+spend(1+drain());
+if(ch(50)){G.cur=G.prev;G.fight=null;L('Вы отступили.');render()}
+else{L('Отступить не удалось.');round()}}
+function lose(s){G.over=s;G.fight=null;render()}
+const inG=()=>G.rooms[G.cur].type=='g',gv=b=>Math.round(b*(inG()?1:.4)),val=it=>it.k=='body'?gv(5)+gv(6):gv(it.k=='m'?5:6);
+function repl(j){const r=G.rooms[G.cur],it=r.loot[G.rep];if(!it)return;const arr=it.k=='w'?G.weps:G.mods,old=arr[j];arr[j]=it.v;r.loot[G.rep]={k:it.k,v:old};G.rep=null;L('Заменено. Старая деталь лежит в комнате.');render()}
+function take(i){G.rep=null;const r=G.rooms[G.cur],it=r.loot[i],ro=G.robot;
+if(it.k=='body'){const b=it.v,c=GEN[b.gen].cost;
+if(b.coreDead&&G.en<c){L('Нужно '+c+'⚡ для перезапуска ядра.');return render()}
+if(b.coreDead){spend(c);b.coreDead=false;L('Ядро перезапущено (−'+c+'⚡).')}
+G.bodies.push({gen:ro.gen,hp:ro.hp,max:ro.max,weps:ro.weps,mods:ro.mods,room:G.cur,station:G.st-1});
+G.robot={gen:b.gen,hp:b.hp,max:b.max,weps:b.weps,mods:b.mods};G.sh=0;
+r.loot.splice(i,1);L('Вы заняли тело '+gn(b.gen)+'. Прежнее тело '+gn(ro.gen)+' осталось здесь.');return render()}
+if(it.k!='a'&&it.v.gen!==ro.gen){L('Не подходит к модели '+gn(ro.gen)+'.');return render()}
+if(it.k=='w'){if(G.weps.length>=GEN[ro.gen].w){G.rep=i;return render()}G.weps.push(it.v)}
+else if(it.k=='m'){if(G.mods.length>=GEN[ro.gen].m){G.rep=i;return render()}G.mods.push(it.v)}
+else{if(G.ant)return L('Ваша антенна цела — только в дробилку.'),render();G.ant=true;L('Антенна заменена.')}
+r.loot.splice(i,1);render()}
+function swapBody(i){const b=G.bodies[i],ro=G.robot;if(!b||G.fight)return;G.rep=null;
+G.bodies.splice(i,1);G.bodies.push({gen:ro.gen,hp:ro.hp,max:ro.max,weps:ro.weps,mods:ro.mods,room:G.cur,station:G.st-1});
+G.robot={gen:b.gen,hp:b.hp,max:b.max,weps:b.weps,mods:b.mods};G.sh=0;
+L('Вы пересели в тело '+gn(b.gen)+'. Тело '+gn(ro.gen)+' осталось здесь.');render()}
+function grind(i){const r=G.rooms[G.cur],it=r.loot[i];G.rep=null;
+if(it.k=='body'){const b=it.v,v=val(it);G.me+=v;r.loot.splice(i,1);b.weps.forEach(w=>r.loot.push({k:'w',v:w}));b.mods.forEach(m=>r.loot.push({k:'m',v:m}));
+L((inG()?'Дробилка':'Вручную')+': тело '+gn(b.gen)+' разобрано, +'+v+' металла'+(b.weps.length+b.mods.length?'; детали остались на полу.':'.'));return render()}
+G.me+=val(it);L((inG()?'Дробилка':'Вручную')+': +'+val(it)+' металла.');r.loot.splice(i,1);render()}
+function grindOwn(t,i){const a=t=='w'?G.weps:G.mods,v=gv(t=='w'?6:5);a.splice(i,1);G.me+=v;L((inG()?'Дробилка':'Вручную')+': +'+v+' металла.');render()}
+function repair(){if(G.me>=12){G.me-=12;G.ant=true;L('Антенна починена (−12 металла).');render()}}
+function useMod(i){const m=G.mods[i];if(m.id=='repair'&&G.me<m.m)return L('Нужно '+m.m+'🔩 для ремонта.'),render();if(G.en<m.e)return L('Не хватает энергии для «'+m.n+'».'),render();spend(m.e);
+if(!ch(m.p)){L(m.n+': сбой, −'+m.e+'⚡.');return render()}
+if(m.id=='shield'){G.sh=m.q;L('Щит включён (−'+m.e+'⚡).')}else if(m.id=='repair'){const h=R(4,8);G.hp=Math.min(G.max,G.hp+h);G.me-=m.m;L('Ремонтник: +'+h+' ядру (−'+m.e+'⚡, −'+m.m+'🔩).')}else{m.left=m.t;L(m.n+' включён (−'+m.e+'⚡).')}render()}
+function sun(i){const m=G.mods[i];if(m.used)return;m.used=true;if(ch(m.p)){G.en+=m.s;L('Панели: +'+m.s+'⚡.')}else L('Панели не сработали.');render()}
+function runAway(){if(G.en<20)return;spend(20);G.cur=G.prev;G.fight=null;L('Побег из комнаты (−20⚡).');render()}
+function surf(){if(G.en<10)return;spend(10);G.fight=null;G.surf=true;G.mods.forEach(m=>m.used=false);L('Вы вышли на поверхность (−10⚡).');render()}
+function drive(k){G.surf=false;G.rep=null;G.tg='c';G.st=k+1;const s=G.sts[k];G.rooms=s.rooms;G.cur=G.prev=0;G.sh=0;L('Вы прибыли на станцию №'+G.st+' «'+s.name+'» ('+s.rooms.length+' комнат).');render()}
+function report(s){const n=s.rooms.length,en=s.rooms.filter(x=>x.type=='e').length,q=en/(n-1),lv=q<.25?'низкая':q<.5?'средняя':'высокая';s.q=q;L('Отчёт, станция №'+G.st+': комнат '+n+', охранных систем устранено '+en+', угроза для людей — '+lv+'.');if(G.sent>=3)L('Сводка по '+G.sent+' станциям: '+verdict()+'.')}
+function verdict(){const a=G.sts.filter(s=>s.sent),m=a.reduce((t,s)=>t+s.q,0)/a.length;return m<.25?'возвращаться безопасно':m<.5?'нужна дополнительная проверка':'возвращаться опасно'}
+function send(){const s=G.sts[G.st-1];s.sent=true;G.sent++;fillMap();report(s);L('Данные станции №'+G.st+' переданы на Землю! Всего станций: '+G.sent+'. Можно лететь дальше.');render()}
+const bodyStr=b=>'Тело '+gn(b.gen)+' (HP '+b.hp+'/'+b.max+(b.coreDead!=null?', ядро '+(b.coreDead?'мёртвое':'живое'):'')+')';
+const bodyEq=b=>'<div class="mu">'+(b.weps.length?'🔫 '+b.weps.map(w=>w.n+' '+w.dmg+'/'+w.acc+'%').join(', '):'без оружия')+' · ⚙ '+(b.mods.length?b.mods.map(m=>m.n).join(', '):'без модулей')+(b.coreDead?' · перезапуск ядра '+GEN[b.gen].cost+'⚡':'')+'</div>';
+const robLine=()=>{const ro=G.robot,gi=GEN[ro.gen];return gn(ro.gen)+' · HP '+ro.hp+'/'+ro.max+' · оружие '+ro.weps.length+'/'+gi.w+' · модули '+ro.mods.length+'/'+gi.m};
+const wd=w=>w.n+' · '+w.dmg+' урона · '+(w.t=='e'?'⚡':'🔩')+w.c;
+const it2s=it=>it.k=='a'?'Антенна':it.k=='body'?'<b>'+bodyStr(it.v)+'</b>'+bodyEq(it.v):it.k=='w'?'Оружие '+gn(it.v.gen)+': '+wd(it.v)+' · '+it.v.acc+'% · HP '+it.v.hp:'Модуль '+gn(it.v.gen)+': '+it.v.n+' ('+md(it.v)+', −'+it.v.e+'⚡, '+it.v.p+'%, HP '+it.v.hp+')';
+function render(){
+const A=document.getElementById('app');
+if(G.over){A.innerHTML='<div class="card"><h3>'+(G.over=='win'?'Миссия выполнена':'Конец')+'</h3><p>'+(G.over=='win'?'Все комнаты исследованы, данные переданы на Землю.':G.over)+'</p><button class="p" onclick="newGame()">Новая станция</button></div>';return}
+if(G.surf){A.innerHTML='<div class="card"><h3>Поверхность Марса</h3><div>⚡ '+G.en+' · 🔩 '+G.me+'</div>'+(G.sent?'<div class="mu">Передано станций: '+G.sent+' · оценка: '+verdict()+'</div>':'')+G.mods.map((m,i)=>m.id=='solar'?'<div>'+m.n+' ('+md(m)+', '+m.p+'%) <button class="p" '+(m.used?'disabled':'')+' onclick="sun('+i+')">Развернуть</button></div>':'').join('')+''+'<h3 style="margin-top:8px">Карта станций</h3>'+G.sts.map(mapCard).join('')+'</div><div class="card log">'+G.log.slice(-4).map(s=>'<div>'+s+'</div>').join('')+'</div>';return}
+const rs=G.rooms,r=rs[G.cur],done=rs.filter(x=>x.clear).length,F=G.fight;
+let h='<div class="card"><div class="st"><div><b class="'+(G.hp<10?'bad':'')+'">'+G.hp+'/'+G.max+'</b><span>ядро</span></div><div><b>'+G.en+'</b><span>⚡ энергия</span></div><div><b>'+G.me+'</b><span>🔩 металл</span></div><div><b class="'+(G.ant?'ok':'bad')+'">'+(G.ant?'ОК':'сломана')+'</b><span>антенна</span></div></div><div class="mu" style="text-align:center;margin-top:6px">'+robLine()+'</div></div>';
+h+='<div class="card"><h3>Станция №'+G.st+(G.sts[G.st-1].sent?' ✓':'')+' · '+r.name+' · исследовано '+done+'/'+rs.length+'</h3><div class="mu">'+stTag(G.sts[G.st-1])+'</div>';
+if(F){const e=F.e,S=act('scan');h+='<div><b>'+e.n+'</b> ['+gn(e.gen)+'] · ядро '+(S?e.core+'/'+e.max+' · ⚡'+e.en+' · 🔩'+e.me+(Object.keys(e.fx).length?' · эффекты: '+Object.keys(e.fx).map(k=>MODS.find(x=>x.id==k).n).join(', '):''):cond(e.core/e.max)+' · данные скрыты (нужен включённый сканер)')+'</div><div class="mu">Куда бить:</div><button class="'+(G.tg=='c'?'sel':'')+'" onclick="G.tg=\'c\';render()">Ядро</button>';
+e.parts.forEach((p,i)=>{h+='<button '+(p.dead?'disabled ':'')+'class="'+(G.tg===i?'sel':'')+'" onclick="G.tg='+i+';render()">'+(p.t=='w'?'Оружие':(S?p.v.n:'Модуль'))+' '+(p.dead?'✗':S?p.hp+'/'+p.max:'')+'</button>'});
+h+='<div class="mu">Атаковать:</div>';
+G.weps.concat([PUNCH]).forEach((w,i,a)=>{h+='<button class="p" '+(canFire(w)?'':'disabled ')+'onclick="shoot('+(i<G.weps.length?'G.weps['+i+']':'PUNCH')+')">'+wd(w)+' · '+chance(w)+'%</button>'});
+h+='<div><button onclick="flee()">Отступить (50%)</button><button onclick="runAway()" '+(G.en>=20?'':'disabled')+'>Побег из комнаты (20⚡)</button></div>'}
+else{
+h+='<div class="mu">Выходы:</div>';r.adj.forEach(i=>{const x=rs[i];h+='<button onclick="go('+i+')">'+x.name+' ['+st(x)+']</button>'});
+if(r.loot.length){h+='<div class="mu">Добыча:</div>';r.loot.forEach((it,i)=>{const bd=it.k=='body';h+='<div>'+it2s(it)+'<br><button '+(bd?'class="p" ':'')+'onclick="take('+i+')">'+(bd?'Занять тело':'Взять')+'</button><button onclick="grind('+i+')">'+(bd?'Разобрать':inG()?'В дробилку':'Сломать')+' (+'+val(it)+')</button></div>'})}
+{const here=G.bodies.map((b,i)=>b.room===G.cur&&b.station===G.st-1?i:-1).filter(i=>i>=0);
+if(here.length){h+='<div class="mu">Оставленные тела:</div>';here.forEach(i=>{const b=G.bodies[i];h+='<div>'+bodyStr(b)+bodyEq(b)+'<button class="p" onclick="swapBody('+i+')">Пересесть в тело '+gn(b.gen)+'</button></div>'})}}
+if(G.rep!=null&&r.loot[G.rep]){const it=r.loot[G.rep],arr=it.k=='w'?G.weps:G.mods;h+='<div class="mu" style="margin-top:6px">Слоты полны. Новое: '+it2s(it)+'<br>Что заменить?</div>';arr.forEach((o,j)=>{h+='<div>'+(it.k=='w'?'🔫 ['+gn(o.gen)+'] '+wd(o)+' · '+o.acc+'% · HP '+o.hp:'⚙ '+o.n+' — '+md(o)+' (−'+o.e+'⚡, '+o.p+'%, HP '+o.hp+')')+'<br><button class="p" onclick="repl('+j+')">Заменить это</button></div>'});h+='<button onclick="G.rep=null;render()">Отмена</button>'}
+h+='<div style="margin-top:6px">';
+if(!G.ant)h+='<button onclick="repair()" '+(G.me>=12?'':'disabled')+'>Починить антенну (12 🔩)</button>';
+h+='<button class="p" onclick="send()" '+(done==rs.length&&G.ant&&!G.sts[G.st-1].sent?'':'disabled')+'>Передать данные</button>'+(G.cur==0?'<button onclick="surf()" '+(G.en>=10?'':'disabled')+'>Выйти на поверхность (10⚡)</button>':'')+'</div>'}
+h+='</div>';
+h+='<div class="card"><h3>Снаряжение</h3>';
+G.weps.forEach((w,i)=>{h+='<div>🔫 ['+gn(w.gen)+'] '+wd(w)+' · '+w.acc+'% · HP '+w.hp+' '+(F?'':'<button onclick="grindOwn(\'w\','+i+')">'+(inG()?'в дробилку':'сломать')+'</button>')+'</div>'});
+G.mods.forEach((m,i)=>{h+='<div>⚙ ['+gn(m.gen)+'] <b>'+m.n+'</b> — '+md(m)+' (−'+m.e+'⚡, срабатывает '+m.p+'%, HP '+m.hp+')'+(m.left>0?' ▶'+m.left:'')+' '+(m.id=='regen'||m.id=='solar'?'':'<button class="p" onclick="useMod('+i+')">Вкл</button>')+(F?'':'<button onclick="grindOwn(\'m\','+i+')">'+(inG()?'в дробилку':'сломать')+'</button>')+'</div>'});
+h+='<div class="mu">'+gn(G.robot.gen)+' · оружие '+G.weps.length+'/'+GEN[G.robot.gen].w+' · модули '+G.mods.length+'/'+GEN[G.robot.gen].m+'</div></div>';
+h+='<div class="card log"><h3>Журнал</h3>'+G.log.slice(-7).map(s=>'<div>'+s+'</div>').join('')+'</div>';
+A.innerHTML=h}
+newGame();
+</script>
+</body>
+</html>
