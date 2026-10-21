@@ -6,13 +6,14 @@
 <title>Марс: заброшенные станции</title>
 <style>
 body { margin: 0; background: #020503; color: #b8f0c8; font-family: monospace; font-size: 11px; padding: 2px; }
-.panel { background: #06100a; border: 1px solid #143822; border-radius: 4px; padding: 4px; margin-bottom: 3px; }
+.screen-top { background: #06100a; border: 1px solid #143822; border-radius: 4px; padding: 4px; margin-bottom: 4px; }
+.screen-bottom { background: #040906; border: 1px solid #1c4d30; border-radius: 4px; padding: 4px; }
 .title { font-size: 10px; color: #528a64; text-transform: uppercase; margin-bottom: 2px; }
-button { font: inherit; color: #b8f0c8; background: #0d2218; border: 1px solid #194a2f; border-radius: 4px; padding: 6px 8px; margin: 2px; cursor: pointer; }
+button { font: inherit; color: #b8f0c8; background: #0d2218; border: 1px solid #194a2f; border-radius: 4px; padding: 7px 10px; margin: 3px; cursor: pointer; }
 button.p { background: #25c458; color: #020a05; border-color: #25c458; font-weight: bold; }
-.log-box { font-size: 9px; color: #528a64; max-height: 45px; overflow-y: auto; background: #040906; padding: 3px; border-radius: 3px; }
+.log-box { font-size: 9px; color: #528a64; max-height: 45px; overflow-y: auto; background: #020503; padding: 3px; border-radius: 3px; }
 .alert { color: #ff5a5a; font-weight: bold; }
-.success { color: #25c458; }
+.section-divider { border-top: 1px dashed #143822; margin: 4px 0; padding-top: 4px; }
 </style>
 </head>
 <body>
@@ -185,7 +186,7 @@ function replaceWeapon(slotIdx) {
   var oldWep = G.weps[slotIdx];
 
   G.weps[slotIdx] = rep.item;
-  r.loot[rep.replacingItem ? rep.replacingItem : rep.lootIdx] = {type: 'w', item: oldWep};
+  r.loot[rep.lootIdx] = {type: 'w', item: oldWep};
   G.replacingItem = null;
   logMsg('Оружие заменено.');
   render();
@@ -212,90 +213,102 @@ function drive(k) {
 
 function render() {
   var A = document.getElementById('app');
-  var html = '';
+  var topHtml = '';
+  var botHtml = '';
 
-  // Шапка статуса
-  html += '<div class="panel" style="display:flex; justify-content:space-between; font-weight:bold;">';
-  html += '<span>HP: ' + G.hp + '/' + G.max + '</span>';
-  html += '<span>⚡: ' + G.en + '</span>';
-  html += '<span>🔩: ' + G.me + '</span>';
-  html += '</div>';
+  // === ВЕРХНИЙ ЭКРАН (Информация, Статус, Снаряжение, Журнал) ===
+  topHtml += '<div class="screen-top">';
+  
+  // Статус
+  topHtml += '<div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">';
+  topHtml += '<span>HP: ' + G.hp + '/' + G.max + '</span>';
+  topHtml += '<span>⚡: ' + G.en + '</span>';
+  topHtml += '<span>🔩: ' + G.me + '</span>';
+  topHtml += '</div>';
 
-  if (G.surf) {
-    html += '<div class="panel"><div class="title">Поверхность Марса</div>';
-    for (var i = 0; i < G.sts.length; i++) {
-      html += '<div style="margin:3px 0;"><b>№' + (i+1) + ' «' + G.sts[i].name + '»</b> ' + (G.sts[i].sent ? '(✓)' : '') + '<br>';
-      html += '<button class="p" onclick="drive(' + i + ')">Лететь</button></div>';
-    }
-    html += '<button onclick="G.surf=false;render()">Назад</button></div>';
-    A.innerHTML = html;
-    return;
-  }
-
-  var r = G.rooms[G.cur];
-  html += '<div class="panel"><div class="title">Станция №' + G.st + ' · ' + r.name + '</div>';
-
-  if (G.fight) {
-    var e = G.fight.e;
-    html += '<div class="alert">Бой: ' + e.name + ' (HP:' + e.core + ')</div>';
-    html += '<div class="title" style="margin-top:4px;">Атаковать оружием:</div>';
-    for (var w = 0; w < G.weps.length; w++) {
-      html += '<button class="p" onclick="shoot(' + w + ')">' + G.weps[w].n + ' (' + G.weps[w].dmg + 'д)</button> ';
-    }
-  } else {
-    html += '<div class="title">Отсеки:</div>';
-    for (var j = 0; j < r.adj.length; j++) {
-      var nIdx = r.adj[j];
-      var nr = G.rooms[nIdx];
-      html += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (✓)' : ' (⚔)') + '</button>';
-    }
-
-    if (r.loot.length > 0) {
-      html += '<div class="title" style="color:#25c458; margin-top:4px;">Находки на полу:</div>';
-      for (var lt = 0; lt < r.loot.length; lt++) {
-        var it = r.loot[lt];
-        html += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '🔫 ' + it.item.n + ' (' + it.item.dmg + 'д)' : '⚙️ ' + it.item.n) + ' ';
-        html += '<button class="p" onclick="takeLoot(' + lt + ')">Взять</button></div>';
-      }
-    }
-
-    if (G.replacingItem) {
-      html += '<div class="panel" style="border-color:#ff5a5a; margin-top:4px;">';
-      html += '<div class="alert">Инвентарь полон (2/2)! Заменить слот:</div>';
-      for (var sl = 0; sl < G.weps.length; sl++) {
-        html += '<button onclick="replaceWeapon(' + sl + ')">Слот ' + (sl+1) + ': ' + G.weps[sl].n + '</button> ';
-      }
-      html += '<br><button onclick="cancelReplace()">Отмена</button>';
-      html += '</div>';
-    }
-
-    if (G.cur === 0) {
-      html += '<div style="margin-top:4px; border-top:1px solid #143822; padding-top:3px;"><button onclick="surf()">Поверхность (5⚡)</button></div>';
-    }
-  }
-  html += '</div>';
+  topHtml += '<div class="section-divider"></div>';
 
   // Инвентарь
-  html += '<div class="panel"><div class="title">Снаряжение (' + G.weps.length + '/2 оружия)</div>';
+  topHtml += '<div class="title">Снаряжение (' + G.weps.length + '/2 оружия):</div>';
   for (var sw = 0; sw < G.weps.length; sw++) {
-    html += '<span style="margin-right:6px;">🔫 <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + ']</span>';
+    topHtml += '<span style="margin-right:6px;">🔫 <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + 'д]</span>';
   }
   if (G.mods.length > 0) {
-    html += '<br><span class="title" style="margin-top:2px;">Модули:</span> ';
+    topHtml += '<br><span class="title" style="margin-top:2px;">Модули:</span> ';
     for (var sm = 0; sm < G.mods.length; sm++) {
-      html += '<b>' + G.mods[sm].n + '</b> ';
+      topHtml += '<b>' + G.mods[sm].n + '</b> ';
     }
   }
-  html += '</div>';
+
+  topHtml += '<div class="section-divider"></div>';
 
   // Журнал
-  html += '<div class="panel"><div class="title">Журнал</div><div class="log-box">';
+  topHtml += '<div class="title">Журнал</div><div class="log-box">';
   for (var l = 0; l < G.log.length; l++) {
-    html += '<div>' + G.log[l] + '</div>';
+    topHtml += '<div>' + G.log[l] + '</div>';
   }
-  html += '</div></div>';
+  topHtml += '</div>';
 
-  A.innerHTML = html;
+  topHtml += '</div>'; // Конец верхнего экрана
+
+
+  // === НИЖНИЙ ЭКРАН (Кнопки управления, Отсеки, Бой, Находки) ===
+  botHtml += '<div class="screen-bottom">';
+
+  if (G.surf) {
+    botHtml += '<div class="title">Поверхность Марса (Выбор базы)</div>';
+    for (var i = 0; i < G.sts.length; i++) {
+      botHtml += '<div style="margin:4px 0;"><b>№' + (i+1) + ' «' + G.sts[i].name + '»</b> ' + (G.sts[i].sent ? '(✓)' : '') + '<br>';
+      botHtml += '<button class="p" onclick="drive(' + i + ')">Лететь сюда</button></div>';
+    }
+    botHtml += '<button onclick="G.surf=false;render()">Назад на базу</button>';
+  } else {
+    var r = G.rooms[G.cur];
+    botHtml += '<div class="title">Станция №' + G.st + ' · ' + r.name + '</div>';
+
+    if (G.fight) {
+      var e = G.fight.e;
+      botHtml += '<div class="alert">БОЙ: ' + e.name + ' (HP:' + e.core + ')</div>';
+      botHtml += '<div class="title" style="margin-top:4px;">Выберите оружие:</div>';
+      for (var w = 0; w < G.weps.length; w++) {
+        botHtml += '<button class="p" onclick="shoot(' + w + ')">' + G.weps[w].n + ' (' + G.weps[w].dmg + 'д)</button> ';
+      }
+    } else {
+      botHtml += '<div class="title">Движение по отсекам:</div>';
+      for (var j = 0; j < r.adj.length; j++) {
+        var nIdx = r.adj[j];
+        var nr = G.rooms[nIdx];
+        botHtml += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (✓)' : ' (⚔)') + '</button>';
+      }
+
+      if (r.loot.length > 0) {
+        botHtml += '<div class="title" style="color:#25c458; margin-top:4px;">Находки в отсеке:</div>';
+        for (var lt = 0; lt < r.loot.length; lt++) {
+          var it = r.loot[lt];
+          botHtml += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '🔫 ' + it.item.n + ' (' + it.item.dmg + 'д)' : '⚙️ ' + it.item.n) + ' ';
+          botHtml += '<button class="p" onclick="takeLoot(' + lt + ')">Взять</button></div>';
+        }
+      }
+
+      if (G.replacingItem) {
+        botHtml += '<div style="border:1px solid #ff5a5a; padding:4px; margin-top:4px; border-radius:3px;">';
+        botHtml += '<div class="alert">Инвентарь полон (2/2)! Заменить слот:</div>';
+        for (var sl = 0; sl < G.weps.length; sl++) {
+          botHtml += '<button onclick="replaceWeapon(' + sl + ')">Слот ' + (sl+1) + ': ' + G.weps[sl].n + '</button> ';
+        }
+        botHtml += '<br><button onclick="cancelReplace()">Отмена</button>';
+        botHtml += '</div>';
+      }
+
+      if (G.cur === 0) {
+        botHtml += '<div style="margin-top:4px; border-top:1px solid #1c4d30; padding-top:4px;"><button onclick="surf()">Поверхность (5⚡)</button></div>';
+      }
+    }
+  }
+
+  botHtml += '</div>'; // Конец нижнего экрана
+
+  A.innerHTML = topHtml + botHtml;
 }
 
 newGame();
