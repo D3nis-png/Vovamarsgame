@@ -2,17 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Марс: заброшенные станции</title>
 <style>
-body { margin: 0; background: #050b07; color: #c9f5d6; font-family: monospace; font-size: 13px; }
-#app { max-width: 500px; margin: 0 auto; padding: 6px; }
+body { margin: 0; background: #050b07; color: #c9f5d6; font-family: monospace; font-size: 13px; padding: 6px; }
 .card { background: #0b1710; border: 1px solid #17402a; border-radius: 8px; padding: 8px; margin-bottom: 6px; }
 h3 { margin: 0 0 4px; font-size: 13px; color: #6fa381; text-transform: uppercase; }
 button { font: inherit; color: #c9f5d6; background: #10241a; border: 1px solid #17402a; border-radius: 6px; padding: 6px 8px; margin: 2px; cursor: pointer; }
-button:disabled { opacity: .4; }
 button.p { background: #2fe06a; color: #03140a; border-color: #2fe06a; }
-button.sel { outline: 2px solid #2fe06a; }
 .log { font-size: 12px; color: #6fa381; }
 .bad { color: #ff5a5a; }
 .ok { color: #2fe06a; }
@@ -20,208 +16,109 @@ button.sel { outline: 2px solid #2fe06a; }
 </style>
 </head>
 <body>
-<div id="app">Загрузка игры...</div>
+
+<div id="app"></div>
+
 <script>
-function R(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
-function P(a) { return a[R(0, a.length - 1)]; }
-function ch(p) { return Math.random() * 100 < p; }
-
-var MODS = [
-  {id:'armor', n:'Броня', d:'урон по ядру −30%', e:1},
-  {id:'sight', n:'Прицел', d:'+15% к точности', e:1},
-  {id:'scan', n:'Сканер', d:'показывает тип комнат', e:1},
-  {id:'shield', n:'Щит', d:'поглощает урон', e:2},
-  {id:'repair', n:'Ремонтник', d:'лечит ядро', e:2},
-  {id:'grip', n:'Манипулятор', d:'+50% металла', e:1}
-];
-
-var RN = ['Шлюз', 'Склад', 'Реакторная', 'Лаборатория', 'Жилой блок', 'Ангар', 'Мастерская'];
-var AGES = {
-  anc: {n: 'Древняя', core: 0.8},
-  old: {n: 'Старая', core: 0.9},
-  new: {n: 'Новая', core: 1.0}
-};
-var PW = {
-  ok: {n: 'нормальное'},
-  em: {n: 'аварийное'},
-  off: {n: 'нет электричества'}
-};
-
-var G;
-
-function gn(g) { return 'X-' + g; }
-
-function genRooms(n) {
-  var rooms = [];
-  var i;
-  for (i = 0; i < n; i++) {
-    rooms.push({
-      name: i === 0 ? 'Шлюз' : RN[i % RN.length],
-      adj: [],
-      type: i === 0 ? 'x' : (ch(45) ? 'e' : (ch(55) ? 'l' : 'x')),
-      vis: i === 0,
-      clear: i === 0,
-      loot: []
-    });
-  }
-  for (i = 1; i < n; i++) {
-    var prev = R(0, i - 1);
-    if (rooms[i].adj.indexOf(prev) === -1) rooms[i].adj.push(prev);
-    if (rooms[prev].adj.indexOf(i) === -1) rooms[prev].adj.push(i);
-  }
-  var g = R(1, n - 1);
-  rooms[g].type = 'g';
-  rooms[g].name = 'Дробилка';
-  return rooms;
+// Игровые данные
+var G = {
+    hp: 20, max: 20,
+    en: 60, me: 15,
+    st: 1,
+    cur: 0,
+    rooms: [
+        { name: 'Шлюз', adj: [1, 2], clear: true },
+        { name: 'Склад', adj: [0], clear: false },
+        { name: 'Реакторная', adj: [0], clear: false }
+    ],
+    sts: [
+        { name: 'Арес-1', sent: false },
+        { name: 'Фобос-2', sent: false },
+        { name: 'Деймос-3', sent: false }
+    ],
+    surf: false,
+    log: ['Система активирована на Марсе. Добро пожаловать!']
 }
 
-function genStation() {
-  return {
-    name: P(['Арес', 'Фобос', 'Деймос', 'Олимп', 'Тарсис']) + '-' + R(1, 99),
-    age: P(['anc', 'old', 'new']),
-    pw: P(['ok', 'em', 'off']),
-    rooms: genRooms(5),
-    sent: false
-  };
+function logMsg(txt) {
+    G.log.push(txt);
+    if (G.log.length > 5) G.log.shift();
 }
 
-function newGame() {
-  var st0 = genStation();
-  G = {
-    robot: { hp: 20, max: 20 },
-    en: 60, me: 15, ant: true, st: 1,
-    rooms: st0.rooms, cur: 0, fight: null, surf: false, sent: 0,
-    log: ['Вы активированы на Марсе. Исследуйте станцию «' + st0.name + '».'],
-    over: null, sts: [st0, genStation(), genStation()]
-  };
-  render();
-}
-
-function L(s) { G.log.push(s); if(G.log.length > 6) G.log.shift(); }
-
-function go(i) {
-  if (G.en <= 0) { G.over = 'Энергия на нуле.'; render(); return; }
-  G.en--;
-  G.cur = i;
-  var r = G.rooms[i];
-  r.vis = true;
-
-  if (!r.clear) {
-    if (r.type === 'e') {
-      G.fight = { e: { n: 'Дрон-охранник', core: 15, max: 15 }, r: r };
-      L('Враг в комнате «' + r.name + '»!');
+function go(idx) {
+    G.cur = idx;
+    var r = G.rooms[idx];
+    if (!r.clear) {
+        r.clear = true;
+        G.me += 5;
+        logMsg('Отсек «' + r.name + '» зачищен: +5 металла.');
     } else {
-      r.clear = true;
-      var found = R(3, 7);
-      G.me += found;
-      L('Комната «' + r.name + '» зачищена: +'+found+' металла.');
+        logMsg('Вы перешли в «' + r.name + '».');
     }
-  } else {
-    L('Вы перешли в «' + r.name + '».');
-  }
-  render();
-}
-
-function shoot() {
-  var f = G.fight;
-  if (!f) return;
-  f.e.core -= 5;
-  L('Попадание по ядро врага: −5.');
-  if (f.e.core <= 0) {
-    L('Враг уничтожен! +10 металла.');
-    G.me += 10;
-    f.r.clear = true;
-    G.fight = null;
-  } else {
-    G.robot.hp -= 2;
-    L('Враг контратакует: −2 по ядру.');
-    if (G.robot.hp <= 0) { G.over = 'Ядро уничтожено.'; }
-  }
-  render();
-}
-
-function repair() {
-  if (G.me >= 12) { G.me -= 12; G.ant = true; L('Антенна починена.'); render(); }
+    render();
 }
 
 function surf() {
-  if (G.en < 10) return;
-  G.en -= 10;
-  G.fight = null;
-  G.surf = true;
-  render();
+    G.surf = true;
+    render();
 }
 
-function drive(k) {
-  G.surf = false;
-  G.st = k + 1;
-  var s = G.sts[k];
-  G.rooms = s.rooms;
-  G.cur = 0;
-  L('Прибытие на станцию №' + G.st + ' «' + s.name + '».');
-  render();
-}
-
-function sendData() {
-  G.sts[G.st - 1].sent = true;
-  G.sent++;
-  L('Данные переданы на Землю!');
-  render();
+function backToBase() {
+    G.surf = false;
+    render();
 }
 
 function render() {
-  var A = document.getElementById('app');
-  if (G.over) {
-    A.innerHTML = '<div class="card"><h3>Конец игры</h3><p>' + G.over + '</p><button class="p" onclick="newGame()">Заново</button></div>';
-    return;
-  }
-  if (G.surf) {
-    var sm = '<div class="card"><h3>Поверхность Марса</h3><div>⚡ ' + G.en + ' | 🔩 ' + G.me + '</div>';
-    for (var i = 0; i < G.sts.length; i++) {
-      sm += '<div style="margin:4px 0">№' + (i + 1) + ' «' + G.sts[i].name + '» ' + (G.sts[i].sent ? '(✓)' : '') + '<br><button class="p" onclick="drive(' + i + ')">Лететь</button></div>';
+    var html = '';
+
+    // Статус
+    html += '<div class="card">';
+    html += 'Ядро: <b>' + G.hp + '/' + G.max + '</b> | ⚡: <b>' + G.en + '</b> | 🔩: <b>' + G.me + '</b>';
+    html += '</div>';
+
+    if (G.surf) {
+        // Меню поверхностей (выбор станций)
+        html += '<div class="card">';
+        html += '<h3>Поверхность Марса</h3>';
+        html += '<div class="mu">Выберите базу для полета:</div>';
+        for (var i = 0; i < G.sts.length; i++) {
+            html += '<div style="margin-top:6px;"><b>' + G.sts[i].name + '</b><br>';
+            html += '<button class="p" onclick="backToBase()">Лететь сюда</button></div>';
+        }
+        html += '<div style="margin-top:8px;"><button onclick="backToBase()">Назад на базу</button></div>';
+        html += '</div>';
+    } else {
+        // Комнаты станции
+        var room = G.rooms[G.cur];
+        html += '<div class="card">';
+        html += '<h3>Станция №' + G.st + ' · ' + room.name + '</h3>';
+        html += '<div class="mu">Доступные отсеки:</div>';
+
+        for (var j = 0; j < room.adj.length; j++) {
+            var nextIdx = room.adj[j];
+            var nextRoom = G.rooms[nextIdx];
+            html += '<button onclick="go(' + nextIdx + ')">' + nextRoom.name + (nextRoom.clear ? ' (✓)' : ' (⚔)') + '</button>';
+        }
+
+        html += '<div style="margin-top:8px; border-top:1px solid #17402a; padding-top:6px;">';
+        html += '<button onclick="surf()">Выйти на поверхность</button>';
+        html += '</div>';
+        html += '</div>';
     }
-    sm += '<button onclick="G.surf=false;render()">Назад</button></div>';
-    A.innerHTML = sm;
-    return;
-  }
 
-  var r = G.rooms[G.cur];
-  var done = 0;
-  for (var d = 0; d < G.rooms.length; d++) if (G.rooms[d].clear) done++;
-
-  var h = '<div class="card"><div style="display:flex;justify-content:space-between"><span>Ядро: <b>' + G.robot.hp + '/' + G.robot.max + '</b></span><span>⚡: <b>' + G.en + '</b></span><span>🔩: <b>' + G.me + '</b></span><span>Антена: <b class="' + (G.ant ? 'ok' : 'bad') + '">' + (G.ant ? 'ОК' : 'Сломана') + '</b></span></div></div>';
-  
-  h += '<div class="card"><h3>Станция №' + G.st + ' · ' + r.name + ' (Исследовано: ' + done + '/' + G.rooms.length + ')</h3>';
-
-  if (G.fight) {
-    var e = G.fight.e;
-    h += '<div class="bad">Бой: ' + e.n + ' (Ядро: ' + e.core + '/' + e.max + ')</div>';
-    h += '<button class="p" onclick="shoot()">Атаковать лазером (-5)</button>';
-  } else {
-    h += '<div class="mu">Доступные выходы:</div>';
-    for (var j = 0; j < r.adj.length; j++) {
-      var idx = r.adj[j];
-      var dest = G.rooms[idx];
-      if (dest) {
-        h += '<button onclick="go(' + idx + ')">' + dest.name + (dest.clear ? ' (✓)' : ' (⚔)') + '</button>';
-      }
+    // Журнал
+    html += '<div class="card log"><h3>Журнал</h3>';
+    for (var l = 0; l < G.log.length; l++) {
+        html += '<div>' + G.log[l] + '</div>';
     }
-    h += '<div style="margin-top:6px">';
-    if (!G.ant) h += '<button onclick="repair()">Починить антенну (12🔩)</button>';
-    h += '<button class="p" onclick="sendData()" ' + (done === G.rooms.length && G.ant ? '' : 'disabled') + '>Передать данные</button>';
-    if (G.cur === 0) h += '<button onclick="surf()">Поверхность (10⚡)</button>';
-    h += '</div>';
-  }
-  h += '</div>';
+    html += '</div>';
 
-  h += '<div class="card log"><h3>Журнал</h3>';
-  for (var l = 0; l < G.log.length; l++) h += '<div>' + G.log[l] + '</div>';
-  h += '</div>';
-
-  A.innerHTML = h;
+    document.getElementById('app').innerHTML = html;
 }
 
-window.onload = function() { newGame(); };
+// Запуск сразу без ожидания onload
+render();
 </script>
+
 </body>
 </html>
