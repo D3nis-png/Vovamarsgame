@@ -5,14 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Марс: заброшенные станции</title>
 <style>
-body { margin: 0; background: #020503; color: #b8f0c8; font-family: monospace; font-size: 11px; padding: 2px; }
-.screen-top { background: #06100a; border: 1px solid #143822; border-radius: 4px; padding: 4px; margin-bottom: 4px; }
-.screen-bottom { background: #040906; border: 1px solid #1c4d30; border-radius: 4px; padding: 4px; }
+body { margin: 0; background: #010302; color: #b8f0c8; font-family: monospace; font-size: 11px; padding: 4px; display: flex; flex-direction: column; align-items: center; }
+.console-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Верхний экран (эмуляция 800x240 / широкая панель) */
+.screen-top { 
+  background: #050d08; 
+  border: 2px solid #143822; 
+  border-radius: 6px; 
+  padding: 6px; 
+  min-height: 110px;
+  box-sizing: border-box;
+}
+
+/* Нижний экран (эмуляция 320x240 / сенсорный пульт) */
+.screen-bottom { 
+  background: #030704; 
+  border: 2px solid #1c4d30; 
+  border-radius: 6px; 
+  padding: 6px; 
+  min-height: 140px;
+  box-sizing: border-box;
+}
+
 .title { font-size: 10px; color: #528a64; text-transform: uppercase; margin-bottom: 2px; }
-button { font: inherit; color: #b8f0c8; background: #0d2218; border: 1px solid #194a2f; border-radius: 4px; padding: 7px 10px; margin: 3px; cursor: pointer; }
+button { font: inherit; color: #b8f0c8; background: #0d2218; border: 1px solid #194a2f; border-radius: 4px; padding: 6px 9px; margin: 2px; cursor: pointer; }
 button:disabled { opacity: 0.4; cursor: default; }
 button.p { background: #25c458; color: #020a05; border-color: #25c458; font-weight: bold; }
-.log-box { font-size: 9px; color: #528a64; max-height: 45px; overflow-y: auto; background: #020503; padding: 3px; border-radius: 3px; }
+.log-box { font-size: 9px; color: #528a64; max-height: 40px; overflow-y: auto; background: #010302; padding: 3px; border-radius: 3px; }
 .alert { color: #ff5a5a; font-weight: bold; }
 .ok { color: #25c458; }
 .bad { color: #ff5a5a; }
@@ -21,7 +41,7 @@ button.p { background: #25c458; color: #020a05; border-color: #25c458; font-weig
 </head>
 <body>
 
-<div id="app"></div>
+<div class="console-container" id="app"></div>
 
 <script>
 function R(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
@@ -36,9 +56,10 @@ var WEAPONS = [
 ];
 
 var MODULES = [
-  {n: 'Броня', desc: 'Защита'},
-  {n: 'Прицел', desc: 'Точность'},
-  {n: 'Щит', desc: 'Поглощение'}
+  {n: 'Броня', id: 'armor', desc: 'Защита'},
+  {n: 'Прицел', id: 'sight', desc: 'Точность'},
+  {n: 'Щит', id: 'shield', desc: 'Поглощение'},
+  {n: 'Ремонтник', id: 'repair', desc: 'Ремонт ядра за 🔩'}
 ];
 
 var RN = ['Шлюз', 'Склад', 'Реактор', 'Лаба', 'Жилой', 'Ангар', 'Мастерская'];
@@ -80,7 +101,7 @@ function genStation() {
 function newGame() {
   var st0 = genStation();
   G = {
-    hp: 20, max: 20, en: 60, me: 15, ant: true, st: 1, cur: 0,
+    hp: 20, max: 20, en: 60, me: 20, ant: true, st: 1, cur: 0,
     weps: [{n: 'Лазер-1', dmg: 4, acc: 80}],
     mods: [],
     rooms: st0.rooms, fight: null, surf: false, replacingItem: null,
@@ -93,6 +114,13 @@ function newGame() {
 function logMsg(txt) {
   G.log.push(txt);
   if (G.log.length > 3) G.log.shift();
+}
+
+function hasModule(id) {
+  for (var i = 0; i < G.mods.length; i++) {
+    if (G.mods[i].id === id) return true;
+  }
+  return false;
 }
 
 function go(idx) {
@@ -119,8 +147,8 @@ function go(idx) {
         logMsg('Найдено оружие!');
       } else {
         var baseM = P(MODULES);
-        r.loot.push({type: 'm', item: {n: baseM.n, desc: baseM.desc}});
-        logMsg('Найден модуль!');
+        r.loot.push({type: 'm', item: {n: baseM.n, id: baseM.id, desc: baseM.desc}});
+        logMsg('Найден модуль (' + baseM.n + ')!');
       }
     } else {
       r.clear = true;
@@ -136,8 +164,10 @@ function shoot(wIdx) {
   var f = G.fight;
   if (!f) return;
   var w = G.weps[wIdx] || G.weps[0];
+  var hitAcc = w.acc;
+  if (hasModule('sight')) hitAcc += 10;
 
-  if (ch(w.acc)) {
+  if (ch(hitAcc)) {
     f.e.core -= w.dmg;
     logMsg(w.n + ': −' + w.dmg + ' HP врагу.');
   } else {
@@ -145,16 +175,21 @@ function shoot(wIdx) {
   }
 
   if (f.e.core <= 0) {
-    logMsg('Враг уничтожен! +8 меттала.');
+    logMsg('Враг уничтожен! +8 🔩.');
     G.me += 8;
     if (ch(60)) {
       var bw = P(WEAPONS);
       f.room.loot.push({type: 'w', item: {n: bw.n + '-' + R(1,9), dmg: bw.dmg, acc: bw.acc}});
     }
+    if (ch(40)) {
+      var bm = P(MODULES);
+      f.room.loot.push({type: 'm', item: {n: bm.n, id: bm.id, desc: bm.desc}});
+    }
     f.room.clear = true;
     G.fight = null;
   } else {
     var dmg = R(2, 4);
+    if (hasModule('armor')) dmg = Math.max(1, dmg - 1);
     G.hp -= dmg;
     logMsg('Удар по ядру: −' + dmg);
     if (G.hp <= 0) { logMsg('Ядро уничтожено!'); setTimeout(newGame, 2000); }
@@ -178,7 +213,7 @@ function takeLoot(lootIdx) {
   } else if (lootObj.type === 'm') {
     G.mods.push(lootObj.item);
     r.loot.splice(lootIdx, 1);
-    logMsg('Модуль установлен.');
+    logMsg('Модуль «' + lootObj.item.n + '» установлен.');
   }
   render();
 }
@@ -209,6 +244,15 @@ function repairAntenna() {
   }
 }
 
+function repairCore() {
+  if (G.me >= 6 && G.hp < G.max) {
+    G.me -= 6;
+    G.hp = Math.min(G.max, G.hp + 5);
+    logMsg('Ядро отремонтировано (+5 HP, −6🔩).');
+    render();
+  }
+}
+
 function sendData() {
   var st = G.sts[G.st - 1];
   st.sent = true;
@@ -235,20 +279,19 @@ function render() {
   var topHtml = '';
   var botHtml = '';
 
-  // Подсчет зачищенных комнат
   var clearedCount = 0;
   for (var d = 0; d < G.rooms.length; d++) {
     if (G.rooms[d].clear) clearedCount++;
   }
   var currentSt = G.sts[G.st - 1];
 
-  // === ВЕРХНИЙ ЭКРАН (Статус, Снаряжение, Журнал) ===
+  // === ВЕРХНИЙ ЭКРАН (Инфо, Статус, Инвентарь, Лог) ===
   topHtml += '<div class="screen-top">';
   
-  topHtml += '<div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">';
+  topHtml += '<div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:3px;">';
   topHtml += '<span>HP: ' + G.hp + '/' + G.max + '</span>';
-  topHtml += '<span>ENERGY: ' + G.en + '</span>';
-  topHtml += '<span>IRON: ' + G.me + '</span>';
+  topHtml += '<span>⚡: ' + G.en + '</span>';
+  topHtml += '<span>🔩: ' + G.me + '</span>';
   topHtml += '<span>Антенна: <b class="' + (G.ant ? 'ok' : 'bad') + '">' + (G.ant ? 'ОК' : 'Сломана') + '</b></span>';
   topHtml += '</div>';
 
@@ -256,7 +299,7 @@ function render() {
 
   topHtml += '<div class="title">Снаряжение (' + G.weps.length + '/2 оружия):</div>';
   for (var sw = 0; sw < G.weps.length; sw++) {
-    topHtml += '<span style="margin-right:6px;"># <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + 'д]</span>';
+    topHtml += '<span style="margin-right:6px;">🔫 <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + 'д]</span>';
   }
   if (G.mods.length > 0) {
     topHtml += '<br><span class="title" style="margin-top:2px;">Модули:</span> ';
@@ -273,27 +316,27 @@ function render() {
   }
   topHtml += '</div>';
 
-  topHtml += '</div>'; // Конец верхнего экрана
+  topHtml += '</div>';
 
 
-  // === НИЖНИЙ ЭКРАН (Управление, Переходы, Бой, Кнопки) ===
+  // === НИЖНИЙ ЭКРАН (Сенсорный пульт управления) ===
   botHtml += '<div class="screen-bottom">';
 
   if (G.surf) {
     botHtml += '<div class="title">Поверхность Марса (Выбор базы)</div>';
     for (var i = 0; i < G.sts.length; i++) {
-      botHtml += '<div style="margin:4px 0;"><b>№' + (i+1) + ' «' + G.sts[i].name + '»</b> ' + (G.sts[i].sent ? '<span class="ok">(✓ передана)</span>' : '') + '<br>';
+      botHtml += '<div style="margin:3px 0;"><b>№' + (i+1) + ' «' + G.sts[i].name + '»</b> ' + (G.sts[i].sent ? '<span class="ok">(✓ передана)</span>' : '') + '<br>';
       botHtml += '<button class="p" onclick="drive(' + i + ')">' + (i + 1 === G.st ? 'Вернуться на базу' : 'Лететь сюда') + '</button></div>';
     }
     botHtml += '<button onclick="G.surf=false;render()">Назад на базу</button>';
   } else {
     var r = G.rooms[G.cur];
-    botHtml += '<div class="title">Станция №' + G.st + ' («' + currentSt.name + '») · ' + r.name + ' (' + clearedCount + '/' + G.rooms.length + ' зачищено)</div>';
+    botHtml += '<div class="title">Станция №' + G.st + ' («' + currentSt.name + '») · ' + r.name + ' (' + clearedCount + '/' + G.rooms.length + ')</div>';
 
     if (G.fight) {
       var e = G.fight.e;
       botHtml += '<div class="alert">БОЙ: ' + e.name + ' (HP:' + e.core + ')</div>';
-      botHtml += '<div class="title" style="margin-top:4px;">Выберите оружие:</div>';
+      botHtml += '<div class="title" style="margin-top:3px;">Выберите оружие:</div>';
       for (var w = 0; w < G.weps.length; w++) {
         botHtml += '<button class="p" onclick="shoot(' + w + ')">' + G.weps[w].n + ' (' + G.weps[w].dmg + 'д)</button> ';
       }
@@ -302,20 +345,20 @@ function render() {
       for (var j = 0; j < r.adj.length; j++) {
         var nIdx = r.adj[j];
         var nr = G.rooms[nIdx];
-        botHtml += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (+)' : ' (x)') + '</button>';
+        botHtml += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (✓)' : ' (⚔)') + '</button>';
       }
 
       if (r.loot.length > 0) {
-        botHtml += '<div class="title" style="color:#25c458; margin-top:4px;">Находки в отсеке:</div>';
+        botHtml += '<div class="title" style="color:#25c458; margin-top:3px;">Находки в отсеке:</div>';
         for (var lt = 0; lt < r.loot.length; lt++) {
           var it = r.loot[lt];
-          botHtml += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '# ' + it.item.n + ' (' + it.item.dmg + 'д)' : '@ ' + it.item.n) + ' ';
+          botHtml += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '🔫 ' + it.item.n + ' (' + it.item.dmg + 'д)' : '⚙️ ' + it.item.n) + ' ';
           botHtml += '<button class="p" onclick="takeLoot(' + lt + ')">Взять</button></div>';
         }
       }
 
       if (G.replacingItem) {
-        botHtml += '<div style="border:1px solid #ff5a5a; padding:4px; margin-top:4px; border-radius:3px;">';
+        botHtml += '<div style="border:1px solid #ff5a5a; padding:3px; margin-top:3px; border-radius:3px;">';
         botHtml += '<div class="alert">Инвентарь полон (2/2)! Заменить слот:</div>';
         for (var sl = 0; sl < G.weps.length; sl++) {
           botHtml += '<button onclick="replaceWeapon(' + sl + ')">Слот ' + (sl+1) + ': ' + G.weps[sl].n + '</button> ';
@@ -324,20 +367,22 @@ function render() {
         botHtml += '</div>';
       }
 
-      // Блок системных кнопок на нижнем экране
-      botHtml += '<div style="margin-top:6px; border-top:1px solid #1c4d30; padding-top:4px;">';
+      botHtml += '<div style="margin-top:4px; border-top:1px solid #1c4d30; padding-top:3px;">';
+      if (hasModule('repair')) {
+        botHtml += '<button onclick="repairCore()" ' + (G.me >= 6 && G.hp < G.max ? '' : 'disabled') + '>Ремонт ядра (+5HP / 6🔩)</button>';
+      }
       if (!G.ant) {
-        botHtml += '<button onclick="repairAntenna()" ' + (G.me >= 12 ? '' : 'disabled') + '>Починить антенну (12 Меттала)</button>';
+        botHtml += '<button onclick="repairAntenna()" ' + (G.me >= 12 ? '' : 'disabled') + '>Починить антенну (12🔩)</button>';
       }
       botHtml += '<button class="p" onclick="sendData()" ' + (clearedCount === G.rooms.length && G.ant && !currentSt.sent ? '' : 'disabled') + '>Передать данные</button>';
       if (G.cur === 0) {
-        botHtml += '<button onclick="surf()">Поверхность (5 Энергии)</button>';
+        botHtml += '<button onclick="surf()">Поверхность (5⚡)</button>';
       }
       botHtml += '</div>';
     }
   }
 
-  botHtml += '</div>'; // Конец нижнего экрана
+  botHtml += '</div>';
 
   A.innerHTML = topHtml + botHtml;
 }
