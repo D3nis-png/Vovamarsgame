@@ -239,7 +239,7 @@ function repairAntenna() {
   if (G.me >= 12) {
     G.me -= 12;
     G.ant = true;
-    logMsg('Антенна починена (−12🔩).');
+    logMsg('Антенна починена (−12 металла).');
     render();
   }
 }
@@ -248,7 +248,7 @@ function repairCore() {
   if (G.me >= 6 && G.hp < G.max) {
     G.me -= 6;
     G.hp = Math.min(G.max, G.hp + 5);
-    logMsg('Ядро отремонтировано (+5 HP, −6🔩).');
+    logMsg('Ядро отремонтировано (+5 HP, −6 металла).');
     render();
   }
 }
@@ -290,8 +290,8 @@ function render() {
   
   topHtml += '<div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:3px;">';
   topHtml += '<span>HP: ' + G.hp + '/' + G.max + '</span>';
-  topHtml += '<span>⚡: ' + G.en + '</span>';
-  topHtml += '<span>🔩: ' + G.me + '</span>';
+  topHtml += '<span>EN: ' + G.en + '</span>';
+  topHtml += '<span>IR: ' + G.me + '</span>';
   topHtml += '<span>Антенна: <b class="' + (G.ant ? 'ok' : 'bad') + '">' + (G.ant ? 'ОК' : 'Сломана') + '</b></span>';
   topHtml += '</div>';
 
@@ -299,7 +299,7 @@ function render() {
 
   topHtml += '<div class="title">Снаряжение (' + G.weps.length + '/2 оружия):</div>';
   for (var sw = 0; sw < G.weps.length; sw++) {
-    topHtml += '<span style="margin-right:6px;">🔫 <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + 'д]</span>';
+    topHtml += '<span style="margin-right:6px;">% <b>' + G.weps[sw].n + '</b>[' + G.weps[sw].dmg + 'д]</span>';
   }
   if (G.mods.length > 0) {
     topHtml += '<br><span class="title" style="margin-top:2px;">Модули:</span> ';
@@ -345,14 +345,14 @@ function render() {
       for (var j = 0; j < r.adj.length; j++) {
         var nIdx = r.adj[j];
         var nr = G.rooms[nIdx];
-        botHtml += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (✓)' : ' (⚔)') + '</button>';
+        botHtml += '<button onclick="go(' + nIdx + ')">' + nr.name + (nr.clear ? ' (+)' : ' (x)') + '</button>';
       }
 
       if (r.loot.length > 0) {
         botHtml += '<div class="title" style="color:#25c458; margin-top:3px;">Находки в отсеке:</div>';
         for (var lt = 0; lt < r.loot.length; lt++) {
           var it = r.loot[lt];
-          botHtml += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '🔫 ' + it.item.n + ' (' + it.item.dmg + 'д)' : '⚙️ ' + it.item.n) + ' ';
+          botHtml += '<div style="font-size:10px; margin:2px 0;">' + (it.type === 'w' ? '% ' + it.item.n + ' (' + it.item.dmg + 'д)' : '@ ' + it.item.n) + ' ';
           botHtml += '<button class="p" onclick="takeLoot(' + lt + ')">Взять</button></div>';
         }
       }
@@ -369,14 +369,14 @@ function render() {
 
       botHtml += '<div style="margin-top:4px; border-top:1px solid #1c4d30; padding-top:3px;">';
       if (hasModule('repair')) {
-        botHtml += '<button onclick="repairCore()" ' + (G.me >= 6 && G.hp < G.max ? '' : 'disabled') + '>Ремонт ядра (+5HP / 6🔩)</button>';
+        botHtml += '<button onclick="repairCore()" ' + (G.me >= 6 && G.hp < G.max ? '' : 'disabled') + '>Ремонт ядра (+5HP / 6 металла)</button>';
       }
       if (!G.ant) {
-        botHtml += '<button onclick="repairAntenna()" ' + (G.me >= 12 ? '' : 'disabled') + '>Починить антенну (12🔩)</button>';
+        botHtml += '<button onclick="repairAntenna()" ' + (G.me >= 12 ? '' : 'disabled') + '>Починить антенну (12 металла)</button>';
       }
       botHtml += '<button class="p" onclick="sendData()" ' + (clearedCount === G.rooms.length && G.ant && !currentSt.sent ? '' : 'disabled') + '>Передать данные</button>';
       if (G.cur === 0) {
-        botHtml += '<button onclick="surf()">Поверхность (5⚡)</button>';
+        botHtml += '<button onclick="surf()">Поверхность (5 энергии)</button>';
       }
       botHtml += '</div>';
     }
